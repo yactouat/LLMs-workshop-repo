@@ -1,2 +1,6 @@
+
+*.db
 __pycache__
+*.session.sql
 venv
+.vscode/settings.json

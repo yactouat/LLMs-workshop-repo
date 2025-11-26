@@ -1,5 +1,8 @@
 langchain
 langchain-community
+langchain-core
+langchain-experimental
 langchain-ollama
 langgraph
 pysqlite3-binary
+sqlite-vss
