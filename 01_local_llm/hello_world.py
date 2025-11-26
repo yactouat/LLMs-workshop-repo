@@ -11,6 +11,13 @@ their reasoning process.
 """
 
 import argparse
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import utils
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils import get_available_model
+
 from langchain_ollama import ChatOllama
 
 
@@ -31,8 +38,8 @@ def main():
     print("=" * 60)
     print()
 
-    # Choose model based on flag
-    model_name = "qwen3:8b" if args.thinking else "llama3.1:latest"
+    # Choose model based on flag and availability
+    model_name = get_available_model(prefer_thinking=args.thinking)
 
     # Initialize connection to local Ollama
     # Default endpoint is http://localhost:11434

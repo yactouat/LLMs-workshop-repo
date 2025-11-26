@@ -30,6 +30,10 @@ import sys
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
+# Add parent directory to path to import utils
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils import get_available_model
+
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
 from langchain_core.prompts import ChatPromptTemplate
@@ -131,8 +135,8 @@ def main():
     # ========================================
     # This is the language model that will generate the final answer
     # based on the retrieved context
-    # Choose model based on --thinking flag
-    model_name = "qwen3:8b" if args.thinking else "llama3.1:latest"
+    # Choose model based on --thinking flag and availability
+    model_name = get_available_model(prefer_thinking=args.thinking)
 
     print(f"🔗 Connecting to Ollama LLM ({model_name})...")
     llm = ChatOllama(

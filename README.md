@@ -48,3 +48,25 @@ To deactivate the virtual environment when you're done:
 ```bash
 deactivate
 ```
+
+## Runnable Scripts
+
+### 01_local_llm/hello_world.py
+```bash
+python3 01_local_llm/hello_world.py [--thinking]
+```
+- `--thinking`: Use qwen3:8b thinking model to show reasoning process
+
+### 02_rag_lcel/ingest.py
+```bash
+python3 02_rag_lcel/ingest.py
+```
+No arguments.
+
+### 02_rag_lcel/query.py
+```bash
+python3 02_rag_lcel/query.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
+```
+- `--interactive`: Run in interactive mode (ask multiple questions)
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of DevFest Corp?")
+- `--thinking`: Use qwen3:8b thinking model to show reasoning process
