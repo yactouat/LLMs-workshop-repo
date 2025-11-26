@@ -91,7 +91,8 @@ def main():
 
     # Define paths
     script_dir = Path(__file__).parent
-    db_path = script_dir / "devfest.db"
+    # Database is stored at the root of the repository for sharing across demos
+    db_path = script_dir.parent / "devfest.db"
 
     # Validate that the database exists (created by ingest.py)
     if not db_path.exists():

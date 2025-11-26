@@ -44,7 +44,8 @@ def main():
     # ========================================
     script_dir = Path(__file__).parent
     knowledge_base_path = script_dir / "knowledge_base.md"
-    db_path = script_dir / "devfest.db"
+    # Database is stored at the root of the repository for sharing across demos
+    db_path = script_dir.parent / "devfest.db"
 
     # Validate that the knowledge base file exists
     if not knowledge_base_path.exists():
