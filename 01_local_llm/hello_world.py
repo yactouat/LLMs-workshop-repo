@@ -20,9 +20,10 @@ from utils import get_available_model
 
 from langchain_ollama import ChatOllama
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
 
-load_dotenv()
+# ! if you're using Google
+# from dotenv import load_dotenv
+# load_dotenv()
 
 def main():
     # Parse command-line arguments

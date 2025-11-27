@@ -33,8 +33,9 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
 
-from dotenv import load_dotenv
-load_dotenv()
+# ! if you're using Google
+# from dotenv import load_dotenv
+# load_dotenv()
 
 
 def main():
@@ -82,15 +83,15 @@ def main():
     # - Smaller and faster than general-purpose LLMs
     # - Produces high-quality 768-dimensional vectors
     print("🔗 Initializing embeddings for semantic chunking...")
-    # embeddings = OllamaEmbeddings(
-    #     model="nomic-embed-text",  # Specialized embedding model from Ollama
-    # )
-
-
-    # ! same goes for the Google Cloud Model (to use in other scripts)
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="text-embedding-004",
+    embeddings = OllamaEmbeddings(
+        model="nomic-embed-text",  # Specialized embedding model from Ollama
     )
+
+
+    # ! same goes for the Google Cloud Model (to use in other)
+    # embeddings = GoogleGenerativeAIEmbeddings(
+    #     model="text-embedding-004",
+    # )
     print("✓ Embedding model initialized")
     print()
 
