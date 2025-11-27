@@ -13,12 +13,17 @@ their reasoning process.
 import argparse
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
+from utils import get_available_model, get_google_model, check_google_api_key
 
 from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 def main():
@@ -29,28 +34,51 @@ def main():
         action="store_true",
         help="Use qwen3:8b thinking model to show reasoning process"
     )
+    parser.add_argument(
+        "--google",
+        action="store_true",
+        help="Use Google AI instead of local Ollama (requires GOOGLE_API_KEY env var)"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
     print("Step 1: Local LLM Hello World")
+    if args.google:
+        print("(Using Google AI)")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("(Using Thinking Model)")
     print("=" * 60)
     print()
 
-    # Choose model based on flag and availability
-    model_name = get_available_model(prefer_thinking=args.thinking)
-
-    # Initialize connection to local Ollama
-    # Default endpoint is http://localhost:11434
-    # For thinking models, enable reasoning to parse "<think>" blocks
-    print(f"Connecting to Ollama with model: {model_name}...")
-    llm = ChatOllama(
-        model=model_name,
-        temperature=0.6,  # Some randomness for more natural responses
-        reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
-    )
-    print("✓ Connected to Ollama")
+    # Initialize LLM based on provider choice
+    if args.google:
+        # Check for API key
+        if not check_google_api_key():
+            print("Error: GOOGLE_API_KEY environment variable not set.")
+            print("Please set it with: export GOOGLE_API_KEY='your-api-key'")
+            sys.exit(1)
+        
+        model_name = get_google_model(prefer_thinking=args.thinking)
+        print(f"Connecting to Google AI with model: {model_name}...")
+        llm = ChatGoogleGenerativeAI(
+            model=model_name,
+            temperature=0.6,
+        )
+        print("✓ Connected to Google AI")
+    else:
+        # Choose model based on flag and availability
+        model_name = get_available_model(prefer_thinking=args.thinking)
+        
+        # Initialize connection to local Ollama
+        # Default endpoint is http://localhost:11434
+        # For thinking models, enable reasoning to parse "<think>" blocks
+        print(f"Connecting to Ollama with model: {model_name}...")
+        llm = ChatOllama(
+            model=model_name,
+            temperature=0.6,  # Some randomness for more natural responses
+            reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
+        )
+        print("✓ Connected to Ollama")
     print()
 
     # The question we'll ask
@@ -65,7 +93,7 @@ def main():
     response = llm.invoke(question)
 
     # For thinking models, display the reasoning trace first
-    if args.thinking:
+    if args.thinking and not args.google:
         # The Thinking Trace (Reasoning)
         # This is where the model's hidden "thought process" is stored
         reasoning = response.additional_kwargs.get("reasoning_content")
@@ -78,7 +106,7 @@ def main():
             print()
 
     # The Final Answer
-    if args.thinking:
+    if args.thinking and not args.google:
         print("### Final Answer ###")
     print(response.content)
     
