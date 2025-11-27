@@ -19,7 +19,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils import get_available_model
 
 from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def main():
     # Parse command-line arguments
@@ -39,18 +42,25 @@ def main():
     print()
 
     # Choose model based on flag and availability
-    model_name = get_available_model(prefer_thinking=args.thinking)
+    # model_name = get_available_model(prefer_thinking=args.thinking)
+    model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
 
     # Initialize connection to local Ollama
     # Default endpoint is http://localhost:11434
     # For thinking models, enable reasoning to parse "<think>" blocks
     print(f"Connecting to Ollama with model: {model_name}...")
-    llm = ChatOllama(
+    # llm = ChatOllama(
+    #     model=model_name,
+    #     temperature=0.0,  # Some randomness for more natural responses
+    #     reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
+    # )
+
+    llm = ChatGoogleGenerativeAI(
         model=model_name,
-        temperature=0.6,  # Some randomness for more natural responses
-        reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
+        temperature=0,
     )
-    print("✓ Connected to Ollama")
+
+    print(f"✓ Connected to {model_name}")
     print()
 
     # The question we'll ask
