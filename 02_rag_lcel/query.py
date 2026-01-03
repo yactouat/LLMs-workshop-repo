@@ -73,20 +73,20 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of DevFest Corp?",
-        help="Question to ask (default: 'Who is the CEO of DevFest Corp?')"
+        default="Who is the CEO of ACME Corpp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3:8b thinking model to show reasoning process"
+        help="Use qwen3 thinking model to show reasoning process"
     )
     args = parser.parse_args()
 
     print("=" * 60)
     print("Step 2: RAG with LCEL - Query Demo")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("(Using Thinking Model: qwen3)")
     print("=" * 60)
     print()
 
@@ -163,7 +163,7 @@ def main():
     # - Context placeholder {context} - filled with retrieved chunks
     # - Question placeholder {question} - filled with user's question
     # - Clear instruction to admit when answer isn't in context
-    template = """You are a helpful assistant answering questions about DevFest Corp.
+    template = """You are a helpful assistant answering questions about ACME Corpp.
 Use the following context to answer the question. If you cannot answer based on the context, say so.
 
 Context:

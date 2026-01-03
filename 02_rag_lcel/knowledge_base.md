@@ -1,7 +1,7 @@
-# DevFest Corp Knowledge Base
+# ACME Corpp Knowledge Base
 
 ## 1. Event Overview
-**DevFest Strasbourg 2025**, organized by **DevFest Corp** (in partnership with GDG Strasbourg and Capitale Dev), is the largest technical conference for developers in the Grand Est region of France.
+**DevFest Strasbourg 2025**, organized by **ACME Corpp** (in partnership with GDG Strasbourg and Capitale Dev), is the largest technical conference for developers in the Grand Est region of France.
 
 * **Date:** November 27, 2025
 * **Location:** CCI Campus, 234 Avenue de Colmar, 67100 Strasbourg.
@@ -26,9 +26,9 @@ The conference features a mix of conferences, short workshops, and keynotes cove
         * **Adrien Montagut** - Co-founder of Commown.
     * **Topic:** Exploring solutions to reduce the environmental and social cost of digital technology through ethical hardware and the functional economy model.
 
-## 4. The Team (DevFest Corp)
+## 4. The Team (ACME Corpp)
 The event is made possible by a dedicated team of volunteers and professionals:
-* **Colin:** Director General & CEO of DevFest Corp
+* **Colin:** Director General & CEO of ACME Corpp
 * **Thibaut:** Developer Front - UX UI
 * **Roger:** Program Manager
 * **Fred:** Front-end Engineer
@@ -37,7 +37,7 @@ The event is made possible by a dedicated team of volunteers and professionals:
 * **Thomas:** Freelance Developer
 
 ## 5. Merchandise (The Shirt)
-DevFest Corp offers an exclusive, high-quality event T-shirt.
+ACME Corpp offers an exclusive, high-quality event T-shirt.
 * **Design:** 2025 Edition (Disco Theme).
 * **Price:** **11.90€** (Sold at cost price).
 * **Quality:** 100% Organic Cotton, 180g/m², designed and printed in France.
@@ -55,7 +55,7 @@ DevFest Strasbourg 2025 serves as a networking hub connecting developers with le
     * Cybersecurity
 
 ## 7. Code of Conduct
-DevFest Corp is dedicated to providing a harassment-free conference experience for everyone, regardless of gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, race, age, or religion.
+ACME Corpp is dedicated to providing a harassment-free conference experience for everyone, regardless of gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, race, age, or religion.
 * **Zero Tolerance:** Harassment of any form is not tolerated.
 * **Scope:** Applies to all conference spaces, including talks, workshops, parties, and online media.
 * **Reporting:** Incidents should be reported immediately to a staff member (identifiable by "STAFF" t-shirts) or via email at `contact@gdgstrasbourg.fr`.
@@ -64,15 +64,15 @@ DevFest Corp is dedicated to providing a harassment-free conference experience f
 ## 8. Company Policies
 
 ### 8.1 Work-from-Home Policy
-DevFest Corp offers flexible remote work arrangements for all team members:
+ACME Corpp offers flexible remote work arrangements for all team members:
 * **Hybrid Model:** Team members can work remotely up to 3 days per week.
 * **Full Remote:** Available for positions that don't require on-site presence, subject to manager approval.
-* **Equipment:** DevFest Corp provides a laptop, external monitor, and €200 annual stipend for home office improvements.
+* **Equipment:** ACME Corpp provides a laptop, external monitor, and €200 annual stipend for home office improvements.
 * **Internet Subsidy:** €40/month internet reimbursement for remote workers.
 * **Core Hours:** Team members must be available for meetings between 10:00-16:00 CET on collaboration days.
 
 ### 8.2 Professional Development
-DevFest Corp is committed to continuous learning and growth:
+ACME Corpp is committed to continuous learning and growth:
 * **Learning Budget:** €2,000 per year per employee for conferences, courses, books, and certifications.
 * **Conference Attendance:** All team members receive 5 paid days annually to attend technical conferences.
 * **Internal Training:** Monthly "Tech Talks" where team members share knowledge on new technologies.
@@ -88,22 +88,22 @@ DevFest Corp is committed to continuous learning and growth:
 
 ### 8.4 Compensation and Benefits
 * **Salary Reviews:** Annual performance reviews with salary adjustments based on market rates and performance.
-* **Equity:** Early employees receive stock options in DevFest Corp.
+* **Equity:** Early employees receive stock options in ACME Corpp.
 * **Bonus Structure:** Annual performance bonus up to 15% of base salary.
 * **Meal Vouchers:** €10/day meal vouchers (Ticket Restaurant).
 * **Transportation:** 100% reimbursement of public transportation costs or €200/month for bike commuters.
 * **Health Insurance:** Premium health insurance (mutuelle) with 100% employer contribution.
 
 ### 8.5 Diversity and Inclusion
-DevFest Corp is committed to building a diverse and inclusive workplace:
+ACME Corpp is committed to building a diverse and inclusive workplace:
 * **Equal Opportunity:** All hiring, promotion, and compensation decisions are made without regard to race, gender, age, religion, disability, or sexual orientation.
 * **Pay Equity:** Annual audits to ensure equal pay for equal work across all demographics.
-* **Accessibility:** All DevFest Corp offices and events are fully wheelchair accessible.
+* **Accessibility:** All ACME Corpp offices and events are fully wheelchair accessible.
 * **Language Support:** Documents and meetings available in both French and English.
 * **Diversity Goals:** Target of 50% women in technical roles by 2027.
 
 ### 8.6 Environmental Sustainability
-* **Carbon Offset:** DevFest Corp offsets 100% of business travel carbon emissions.
+* **Carbon Offset:** ACME Corpp offsets 100% of business travel carbon emissions.
 * **Green Hosting:** All digital infrastructure runs on renewable energy providers.
 * **Waste Reduction:** Zero single-use plastics in offices; comprehensive recycling and composting programs.
 * **Sustainable Events:** All DevFest conferences aim for zero waste with reusable materials and plant-based catering options.
@@ -117,7 +117,7 @@ DevFest Corp is committed to building a diverse and inclusive workplace:
 * **Incident Response:** 24-hour maximum response time for reported security incidents.
 
 ### 8.8 Volunteer Recognition
-DevFest Corp recognizes the invaluable contribution of volunteers:
+ACME Corpp recognizes the invaluable contribution of volunteers:
 * **Free Attendance:** All volunteers receive free entry to the conference they support.
 * **Volunteer Hours:** Certificate of volunteer hours provided for students requiring community service credits.
 * **Networking Opportunities:** Exclusive volunteer dinner with speakers and sponsors.

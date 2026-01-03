@@ -114,7 +114,7 @@ def transfer_to_researcher(reason: str) -> str:
     Transfer control to the Researcher agent.
 
     Use this when you need:
-    - Information from the DevFest Corp knowledge base
+    - Information from the ACME Corpp knowledge base
     - Facts about company policies, people, or culture
     - Research on specific topics
 
@@ -177,7 +177,7 @@ def researcher_agent(state: NetworkState) -> dict:
     - No mixing of formats or ambiguous responses
 
     This agent:
-    - Queries the DevFest Corp knowledge base
+    - Queries the ACME Corpp knowledge base
     - Uses structured output to decide on handoffs
     - Decides independently when to handoff
 
@@ -538,7 +538,7 @@ def fact_checker_agent(state: NetworkState) -> dict:
         verification_result = """Verification Report:
 
 ✓ Information Sources: Verified against knowledge base
-✓ Policy Compliance: All statements align with DevFest Corp policies
+✓ Policy Compliance: All statements align with ACME Corpp policies
 ✓ Factual Accuracy: Cross-referenced data points are consistent
 ✓ Quality Check: Content meets professional standards
 ✓ Completeness: Response addresses the user's question
@@ -804,20 +804,20 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of DevFest Corp?",
-        help="Question to ask (default: 'Who is the CEO of DevFest Corp?')"
+        default="Who is the CEO of ACME Corpp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3:8b thinking model for agent decisions"
+        help="Use qwen3 thinking model for agent decisions"
     )
     args = parser.parse_args()
 
     print("=" * 60)
     print("Step 5: Network/Swarm Multi-Agent System")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("(Using Thinking Model: qwen3)")
     print("=" * 60)
     print()
 

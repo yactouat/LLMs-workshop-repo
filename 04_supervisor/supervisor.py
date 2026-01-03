@@ -82,7 +82,7 @@ def researcher_agent(state: SupervisorState) -> dict:
     Researcher Agent - Retrieves information from the knowledge base.
 
     This agent specializes in:
-    - Querying the DevFest Corp knowledge base (SQLite vector store)
+    - Querying the ACME Corpp knowledge base (SQLite vector store)
     - Finding relevant company information
     - Retrieving policy documents and organizational details
 
@@ -186,7 +186,7 @@ def writer_agent(state: SupervisorState) -> dict:
         }
 
     # Prepare messages for writer
-    system_prompt = "You are a professional writer for DevFest Corp. Based on the research provided, write a clear, concise answer to the user's question."
+    system_prompt = "You are a professional writer for ACME Corpp. Based on the research provided, write a clear, concise answer to the user's question."
     
     research_context = chr(10).join(context) if context else "No research context provided."
     
@@ -255,7 +255,7 @@ def fact_checker_agent(state: SupervisorState) -> dict:
         fact_check_result = """[Fact Checker] Verification Report:
 
 ✓ Information Sources: Verified against knowledge base
-✓ Policy Compliance: All statements align with DevFest Corp policies
+✓ Policy Compliance: All statements align with ACME Corpp policies
 ✓ Factual Accuracy: Cross-referenced data points are consistent
 ✓ Quality Check: Content meets professional standards
 ✓ Completeness: Response addresses the user's question
@@ -446,20 +446,20 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of DevFest Corp?",
-        help="Question to ask (default: 'Who is the CEO of DevFest Corp?')"
+        default="Who is the CEO of ACME Corpp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3:8b thinking model for supervisor decisions"
+        help="Use qwen3 thinking model for supervisor decisions"
     )
     args = parser.parse_args()
 
     print("=" * 60)
     print("Step 4: Supervisor Multi-Agent System")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("(Using Thinking Model: qwen3)")
     print("=" * 60)
     print()
 

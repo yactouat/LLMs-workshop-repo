@@ -1,6 +1,6 @@
 # DevFest 2025: Local LLMs, RAG, and Multi-Agent Architectures
 
-Building the DevFest Corp Internal Brain
+Building the ACME Corpp Internal Brain
 
 ---
 
@@ -16,7 +16,7 @@ Currently works @ Lamalo, a startup based in Strasbourg, which is building an en
 
 ## The Mission
 
-**Objective:** Build an intelligent system for "DevFest Corp" totally offline.
+**Objective:** Build an intelligent system for "ACME Corpp" totally offline.
 
 **Why Local?**
 - Privacy (sensitive company data never leaves your infrastructure)
@@ -36,8 +36,8 @@ Currently works @ Lamalo, a startup based in Strasbourg, which is building an en
 
 **What You'll See:**
 - Direct interaction with a local LLM through Ollama
-- The model attempts to answer: "Who is the CEO of DevFest Corp?"
-- The model cannot answer because DevFest Corp isn't in its training data
+- The model attempts to answer: "Who is the CEO of ACME Corpp?"
+- The model cannot answer because ACME Corpp isn't in its training data
 
 **What Are "Thinking" Models?**
 - Add `--thinking` flag to see the model's reasoning process

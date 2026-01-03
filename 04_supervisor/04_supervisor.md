@@ -91,7 +91,7 @@ User Query: "Who is the CEO?"
 │              SUPERVISOR MULTI-AGENT SYSTEM                   │
 └─────────────────────────────────────────────────────────────┘
 
-USER QUERY: "Who is the CEO of DevFest Corp?"
+USER QUERY: "Who is the CEO of ACME Corpp?"
    │
    ▼
 ┌────────────────┐
@@ -175,7 +175,7 @@ else:
 
 **How it works:**
 1. Receives task from Supervisor
-2. Queries the DevFest Corp knowledge base
+2. Queries the ACME Corpp knowledge base
 3. Performs similarity search (top 3 results)
 4. Returns findings to Supervisor
 
@@ -217,7 +217,7 @@ else:
 
 ## Workflow Execution
 
-### Example Flow: "Who is the CEO of DevFest Corp?"
+### Example Flow: "Who is the CEO of ACME Corpp?"
 
 **Step 1: Supervisor Receives Query**
 ```
@@ -231,7 +231,7 @@ Decision: Need information → Route to RESEARCHER
    ✓ Retrieved 3 relevant documents
    ✓ Found: CEO information
 Returns: "[Researcher] I found the following information:
-         Alex Dupont is the CEO of DevFest Corp..."
+         Alex Dupont is the CEO of ACME Corpp..."
 ```
 
 **Step 3: Supervisor Re-evaluates**
@@ -246,7 +246,7 @@ Decision: Have info, need content → Route to WRITER
    ✓ Synthesizing research findings
    ✓ Creating professional response
 Returns: "[Writer] Alex Dupont serves as the CEO of
-         DevFest Corp, leading the company's strategic..."
+         ACME Corpp, leading the company's strategic..."
 ```
 
 **Step 5: Supervisor Re-evaluates**
@@ -272,7 +272,7 @@ Decision: All tasks complete → FINISH
 Final Answer:
 Based on the work of our specialized team:
 
-Alex Dupont serves as the CEO of DevFest Corp,
+Alex Dupont serves as the CEO of ACME Corpp,
 leading the company's strategic...
 
 ---
@@ -388,11 +388,11 @@ python3 04_supervisor/supervisor.py --interactive
 
 ### Custom Question
 ```bash
-python3 04_supervisor/supervisor.py --question "What is DevFest Corp's vacation policy?"
+python3 04_supervisor/supervisor.py --question "What is ACME Corpp's vacation policy?"
 ```
 
 ### Thinking Model Mode
-Use `qwen3:8b` to see supervisor's reasoning process:
+Use `qwen3` to see supervisor's reasoning process:
 ```bash
 python3 04_supervisor/supervisor.py --thinking
 ```
@@ -598,7 +598,7 @@ def supervisor_agent(state: SupervisorState) -> dict:
   - Ensure workers tag their output (e.g., "[Researcher]", "[Writer]")
 
 **Issue**: Thinking model not showing reasoning
-- **Solution**: Use `--thinking` flag and ensure you're using `qwen3:8b`
+- **Solution**: Use `--thinking` flag and ensure you're using `qwen3`
 
 ## Next Steps
 

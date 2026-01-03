@@ -6,24 +6,28 @@ This script demonstrates a basic interaction with a local LLM through Ollama.
 It asks a question that the model cannot answer from its training data,
 illustrating the need for RAG (Retrieval-Augmented Generation).
 
-It also demonstrates the use of thinking models (qwen3:8b) which can show
+It also demonstrates the use of thinking models (qwen3) which can show
 their reasoning process.
 """
 
 import argparse
+from dotenv import load_dotenv
+import os
 import sys
 from pathlib import Path
 
+# Load environment variables from .env file if it exists
+try:
+    env_path = Path(__file__).parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    # python-dotenv not installed, will rely on environment variables
+    pass
+
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
-
-from langchain_ollama import ChatOllama
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-# ! if you're using Google
-# from dotenv import load_dotenv
-# load_dotenv()
+from utils import get_llm
 
 def main():
     # Parse command-line arguments
@@ -31,44 +35,30 @@ def main():
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3:8b thinking model to show reasoning process"
+        help="Use thinking model to show reasoning process (qwen3 for Ollama, or model specified by GOOGLE_THINKING_MODEL for Google)"
     )
     args = parser.parse_args()
 
+    # Get provider info for display
+    provider = os.getenv("LLM_PROVIDER", "ollama")
+
     print("=" * 60)
     print("Step 1: Local LLM Hello World")
+    print(f"Provider: {provider}")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("Mode: Thinking (with reasoning traces)")
     print("=" * 60)
     print()
 
-    # Choose model based on flag and availability
-    model_name = get_available_model(prefer_thinking=args.thinking)
+    # Get configured LLM instance from factory
+    print(f"Initializing {provider} LLM...")
+    llm = get_llm(prefer_thinking=args.thinking, temperature=0.0)
 
-    # ! if you need to use a Cloud Model uncomment this line and comment the line above
-    # model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
-
-    # Initialize connection to local Ollama
-    # Default endpoint is http://localhost:11434
-    # For thinking models, enable reasoning to parse "<think>" blocks
-    print(f"Connecting to Ollama with model: {model_name}...")
-    llm = ChatOllama(
-        model=model_name,
-        temperature=0.0,  # Some randomness for more natural responses
-        reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
-    )
-
-    # ! same goes for the Google Cloud Model
-    # llm = ChatGoogleGenerativeAI(
-    #     model=model_name,
-    #     temperature=0,
-    # )
-
-    print(f"✓ Connected to {model_name}")
+    print(f"✓ Connected to {llm.model}")
     print()
 
     # The question we'll ask
-    question = "Who is the CEO of DevFest Corp?"
+    question = "Who is the CEO of ACME Corpp?"
 
     print(f"Question: {question}")
     print()
@@ -79,10 +69,32 @@ def main():
     response = llm.invoke(question)
 
     # For thinking models, display the reasoning trace first
+    reasoning = None
+    final_answer = None
+    
+    # Check for Gemini 3 format (content as list of dicts)
+    # This applies to both thinking and non-thinking modes
+    if isinstance(response.content, list):
+        thinking_parts = []
+        text_parts = []
+        for part in response.content:
+            if isinstance(part, dict):
+                if part.get("type") == "thinking":
+                    thinking_parts.append(part.get("thinking", ""))
+                elif part.get("type") == "text":
+                    text_parts.append(part.get("text", ""))
+        if thinking_parts:
+            reasoning = "\n".join(thinking_parts)
+        if text_parts:
+            final_answer = "\n".join(text_parts)
+    
     if args.thinking:
         # The Thinking Trace (Reasoning)
-        # This is where the model's hidden "thought process" is stored
-        reasoning = response.additional_kwargs.get("reasoning_content")
+        # For Ollama models: reasoning is in additional_kwargs
+        # For Gemini 3 models: reasoning is in response.content as a list of dicts
+        if not reasoning:
+            reasoning = response.additional_kwargs.get("reasoning_content")
+        
         if reasoning:
             print("### Thinking Trace ###")
             print(reasoning)
@@ -94,20 +106,31 @@ def main():
     # The Final Answer
     if args.thinking:
         print("### Final Answer ###")
-    print(response.content)
+    
+    # Extract text content - handle both list format (Google) and string format (Ollama)
+    if final_answer is not None:
+        print(final_answer)
+    elif isinstance(response.content, str):
+        print(response.content)
+    else:
+        # Fallback: print the content as-is (shouldn't normally reach here)
+        print(response.content)
     
     print("-" * 60)
     
     print()
 
     print("Observation:")
-    print("The model doesn't have information about DevFest Corp since it's")
+    print("The model doesn't have information about ACME Corpp since it's")
     print("not in its training data. This is where RAG comes in handy!")
 
     if args.thinking:
         print()
         print("Thinking Model Note:")
-        print("The qwen3:8b model is a thinking model that exposes its reasoning process.")
+        if provider == "ollama":
+            print("The qwen3 model is a thinking model that exposes its reasoning process.")
+        else:
+            print("Thinking models expose their reasoning process.")
         print("With reasoning=True, LangChain parses '<think>' blocks and moves them")
         print("to response.additional_kwargs['reasoning_content']. This helps understand")
         print("how the model arrives at its conclusions.")

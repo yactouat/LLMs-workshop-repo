@@ -123,14 +123,14 @@ class AgentState(BaseModel):
 @tool
 def lookup_policy(query: str) -> str:
     """
-    Query the DevFest Corp knowledge base (SQLite vector store) for information
+    Query the ACME Corpp knowledge base (SQLite vector store) for information
     about company policies, people, culture, and other organizational details.
 
     Use this tool when the user asks about:
     - Company leadership (CEO, executives)
     - Company policies (vacation, remote work, etc.)
     - Company culture and values
-    - General information about DevFest Corp
+    - General information about ACME Corpp
 
     Args:
         query: The search query to find relevant information
@@ -376,20 +376,20 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of DevFest Corp?",
-        help="Question to ask (default: 'Who is the CEO of DevFest Corp?')"
+        default="Who is the CEO of ACME Corpp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3:8b thinking model to show reasoning process"
+        help="Use qwen3 thinking model to show reasoning process"
     )
     args = parser.parse_args()
 
     print("=" * 60)
     print("Step 3: LangGraph ReAct Agent")
     if args.thinking:
-        print("(Using Thinking Model: qwen3:8b)")
+        print("(Using Thinking Model: qwen3)")
     print("=" * 60)
     print()
 
@@ -415,7 +415,7 @@ def main():
     print()
 
     print("Available tools:")
-    print("  1. lookup_policy - Query DevFest Corp knowledge base")
+    print("  1. lookup_policy - Query ACME Corpp knowledge base")
     print("  2. search_tech_events - Find upcoming tech conferences")
     print()
 

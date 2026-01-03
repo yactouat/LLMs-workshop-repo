@@ -4,19 +4,43 @@ A hands-on workshop providing a comprehensive beginner's guide to using local La
 
 Participants will gain practical insights into running LLMs locally, integrating vectorized knowledge bases for RAG systems, and implementing multi-agent systems for various use cases. By the end of this session, you will have a clear understanding of what is achievable in your applications using open LLMs on personal machines or on-premise infrastructure.
 
+## Workshop Structure
+
+The demos in this repository are numbered in ascending order (01, 02, 03, etc.) and are designed to be explored sequentially for optimal learning. Each demo builds upon concepts introduced in previous ones, creating a progressive learning path from basic LLM usage to advanced multi-agent architectures. We recommend following the numbered order to get the most out of this workshop.
+
 ## Prerequisites
 
 ### Hardware
-- Laptop with at least 8GB RAM (16GB recommended for local LLMs) OR 8GB VRAM
+- **For Local Models:** Laptop with at least 8GB RAM (16GB recommended) OR 8GB VRAM
+- **For Cloud Models:** Any laptop with internet connection
 
 ### Software
 1. **Python 3.10+** installed
 2. **Code Editor:** VS Code (recommended) || PyCharm || Cursor
-3. **Ollama:** Download and install from [ollama.com](https://ollama.com)
-4. **Pull Base Models** (Run in terminal):
-   - `ollama pull llama3.1:latest` || `ollama pull qwen3:8b`
+3. **Git:** Installed
+
+### Model Provider (Choose One)
+
+#### Local models
+
+##### Local Models with Ollama
+1. **Ollama:** Download and install from [ollama.com](https://ollama.com)
+2. **Pull Base Models** (Run in terminal):
+   - `ollama pull llama3.1` || `ollama pull qwen3`
    - `ollama pull nomic-embed-text`
-5. **Git:** Installed
+
+#### Cloud models
+
+##### Cloud Models with Google AI Studio
+1. **Google AI Studio API Key:**
+   - Visit [Google AI Studio](https://aistudio.google.com/)
+   - Sign in with your Google account
+   - Create an API key
+   - Create a `.env` file in the project root with:
+     ```
+     GOOGLE_API_KEY=your_api_key_here
+     ```
+2. **Note:** Cloud models use `gemini-2.5-flash` by default and don't require local model downloads.
 
 ## Setting Up a Virtual Environment
 
@@ -44,10 +68,61 @@ Once activated, you'll see `(venv)` in your terminal prompt. You can then instal
 pip install -r requirements.txt
 ```
 
+**Note for Google AI Studio users:** Make sure you have created a `.env` file with your `GOOGLE_API_KEY` before running the scripts.
+
 To deactivate the virtual environment when you're done:
 ```bash
 deactivate
 ```
+
+## Switching Between Local and Cloud Models
+
+The scripts in this workshop support both local Ollama models and cloud models via Google AI Studio.
+
+### For hello_world.py (Modern Pattern)
+
+`hello_world.py` uses environment variable configuration - no code changes needed:
+
+1. **Set up your API key** (see Prerequisites above)
+2. **Create a `.env` file** in the repository root:
+   ```
+   LLM_PROVIDER=google
+   GOOGLE_API_KEY=your_api_key_here
+   GOOGLE_MODEL=gemini-3-flash-preview
+   GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: for --thinking flag
+   ```
+3. **Run the script normally** - it will automatically use Google models
+
+To switch back to Ollama, either remove the `.env` file or set `LLM_PROVIDER=ollama`.
+
+You can also use inline environment variables:
+```bash
+LLM_PROVIDER=google python3 01_local_llm/hello_world.py
+```
+
+### For Other Scripts (Legacy Pattern)
+
+Other scripts (`query.py`, `agent.py`, etc.) still require manual code changes:
+
+1. **Set up your API key** (see Prerequisites above)
+2. **Modify the script** to use cloud models:
+   - Uncomment the line with `use_cloud=True` in the `get_available_model()` call
+   - Comment out the `ChatOllama` initialization
+   - Uncomment the `ChatGoogleGenerativeAI` initialization
+   - Uncomment the `load_dotenv()` import if needed
+
+Example pattern in older scripts:
+```python
+# Change from:
+model_name = get_available_model(prefer_thinking=args.thinking)
+llm = ChatOllama(model=model_name, ...)
+
+# To:
+model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
+llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+```
+
+**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py` for easier provider switching.
 
 ## Runnable Scripts
 
@@ -55,7 +130,9 @@ deactivate
 ```bash
 python3 01_local_llm/hello_world.py [--thinking]
 ```
-- `--thinking`: Use qwen3:8b thinking model to show reasoning process
+- `--thinking`: Use thinking model to show reasoning process
+  - For Ollama: Uses qwen3 (or model specified by `OLLAMA_THINKING_MODEL` env var)
+  - For Google: Uses model specified by `GOOGLE_THINKING_MODEL` env var
 
 ### 02_rag_lcel/ingest.py
 ```bash
@@ -68,16 +145,16 @@ No arguments.
 python3 02_rag_lcel/query.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of DevFest Corp?")
-- `--thinking`: Use qwen3:8b thinking model to show reasoning process
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--thinking`: Use thinking model to show reasoning process (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
 
 ### 03_langgraph_react/agent.py
 ```bash
 python3 03_langgraph_react/agent.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of DevFest Corp?")
-- `--thinking`: Use qwen3:8b thinking model to show reasoning process
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--thinking`: Use thinking model to show reasoning process (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the agent's `lookup_policy` tool.
 
@@ -86,8 +163,8 @@ python3 03_langgraph_react/agent.py [--interactive] [--question "YOUR_QUESTION"]
 python3 04_supervisor/supervisor.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of DevFest Corp?")
-- `--thinking`: Use qwen3:8b thinking model for supervisor decisions
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--thinking`: Use qwen3 thinking model for supervisor decisions
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
 
@@ -96,8 +173,8 @@ python3 04_supervisor/supervisor.py [--interactive] [--question "YOUR_QUESTION"]
 python3 05_network/network.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of DevFest Corp?")
-- `--thinking`: Use qwen3:8b thinking model for agent decisions
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--thinking`: Use qwen3 thinking model for agent decisions
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
 

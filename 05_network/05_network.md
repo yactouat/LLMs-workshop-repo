@@ -112,7 +112,7 @@ Alternative Flow:
 │              NETWORK MULTI-AGENT SYSTEM                      │
 └─────────────────────────────────────────────────────────────┘
 
-USER QUERY: "Who is the CEO of DevFest Corp?"
+USER QUERY: "Who is the CEO of ACME Corpp?"
    │
    ▼
 ┌────────────────┐
@@ -335,7 +335,7 @@ def handle_tool_calls(state: NetworkState) -> dict:
 
 ## Workflow Execution
 
-### Example Flow: "Who is the CEO of DevFest Corp?"
+### Example Flow: "Who is the CEO of ACME Corpp?"
 
 **Step 1: Researcher Starts**
 ```
@@ -388,7 +388,7 @@ Action: Provides final answer (sets next_agent to "FINISH")
 ```
 Final Answer:
 [Fact Checker] Based on verified information from the knowledge base, 
-Alex Dupont serves as the CEO of DevFest Corp...
+Alex Dupont serves as the CEO of ACME Corpp...
 ```
 
 ### Alternative Flow Example
@@ -584,11 +584,11 @@ python3 05_network/network.py --interactive
 
 ### Custom Question
 ```bash
-python3 05_network/network.py --question "What is DevFest Corp's vacation policy?"
+python3 05_network/network.py --question "What is ACME Corpp's vacation policy?"
 ```
 
 ### Thinking Model Mode
-Use `qwen3:8b` to see agent reasoning processes:
+Use `qwen3` to see agent reasoning processes:
 ```bash
 python3 05_network/network.py --thinking
 ```
