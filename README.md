@@ -100,3 +100,13 @@ python3 05_network/network.py [--interactive] [--question "YOUR_QUESTION"] [--th
 - `--thinking`: Use qwen3:8b thinking model for agent decisions
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
+
+## Contributing & Ideas
+
+We welcome your ideas, suggestions, and contributions! 
+
+- **Have an idea?** Share it in our [Discussions Ideas category](https://github.com/yactouat/LLMs-workshop-repo/discussions/categories/ideas) 💡
+- **Found a bug or have a question?** Open an [Issue](https://github.com/yactouat/LLMs-workshop-repo/issues) or start a discussion in [Q&A](https://github.com/yactouat/LLMs-workshop-repo/discussions/categories/q-a)
+- **Want to show off your work?** Share it in [Show and tell](https://github.com/yactouat/LLMs-workshop-repo/discussions/categories/show-and-tell) 🙌
+
+Your feedback helps make this workshop better for everyone!
