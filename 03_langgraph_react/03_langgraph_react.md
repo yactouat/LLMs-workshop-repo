@@ -7,7 +7,7 @@ Transition from linear chains to dynamic graphs with decision-making capabilitie
 Before starting this step, ensure you have:
 - Completed Step 2 (RAG with LCEL)
 - The knowledge base ingested into SQLite (run `02_rag_lcel/ingest.py`)
-- Ollama running with models pulled
+- Ollama or Google env var set for loading given models
 - Python virtual environment activated
 
 ## What You'll Learn
@@ -35,16 +35,16 @@ Before starting this step, ensure you have:
          ┌─────────────┐
          │    Agent    │◀──┐
          └──────┬──────┘   │
-                │           │
+                │          │
          ┌──────▼──────┐   │
          │   Decision  │   │
          └──┬───────┬──┘   │
-            │       │       │
+            │       │      │
      ┌──────▼──┐ ┌─▼────┐  │
      │ Tool A  │ │Tool B│  │
      └──────┬──┘ └─┬────┘  │
-            │      │        │
-            └──────┴────────┘
+            │      │       │
+            └──────┴───────┘
 ```
 - **Cyclic flow**: Can loop back and iterate
 - **Dynamic**: Different paths based on conditions
@@ -118,7 +118,7 @@ Our ReAct agent has access to two tools:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 LANGGRAPH REACT ARCHITECTURE                 │
+│                 LANGGRAPH REACT ARCHITECTURE                │
 └─────────────────────────────────────────────────────────────┘
 
 USER QUERY

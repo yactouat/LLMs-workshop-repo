@@ -118,6 +118,7 @@ This pattern appears in all RAG-related scripts and must be placed BEFORE any sq
 - **Graph structure**: agent ↔ tools (cyclic)
 - **Tools**: `@tool` decorated functions (lookup_policy, search_tech_events)
 - **Decision logic**: `should_continue()` checks for tool_calls to route agent → tools or END
+- **LLM/Embeddings**: Uses `get_llm()` and `get_embeddings()` factories for provider-agnostic model selection
 
 **Step 4: Supervisor Pattern (04_supervisor/)**
 - **Pattern**: Centralized control with worker delegation
@@ -175,16 +176,17 @@ GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: specify thinking model
 - `01_local_llm/hello_world.py` - Uses `get_llm()`
 - `02_rag_lcel/ingest.py` - Uses `get_embeddings()`
 - `02_rag_lcel/query.py` - Uses `get_llm()` and `get_embeddings()`
+- `03_langgraph_react/agent.py` - Uses `get_llm()` and `get_embeddings()`
 
-**Important for RAG scripts:** When switching providers (Ollama ↔ Google):
+**Important for RAG scripts and agent:** When switching providers (Ollama ↔ Google):
 1. Update `.env` with new `LLM_PROVIDER`
 2. **Must re-run `ingest.py`** to rebuild vector database with matching embeddings
 3. Different providers use different embeddings models with incompatible vector spaces
+4. The agent's `lookup_policy` tool uses the same embeddings model as the knowledge base
 
 **Legacy Pattern (other scripts - direct instantiation):**
 
 The following scripts still use the legacy pattern with direct model instantiation:
-- `03_langgraph_react/agent.py`
 - `04_supervisor/supervisor.py`
 - `05_network/network.py`
 

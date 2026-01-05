@@ -22,6 +22,7 @@ Key Concepts:
 """
 
 import argparse
+import os
 from pathlib import Path
 import sqlite3
 import sys
@@ -33,7 +34,6 @@ __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import sqlite_vss
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.tools import tool
@@ -44,7 +44,10 @@ from pydantic import BaseModel, Field, ConfigDict
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
+from utils import get_llm, get_embeddings, load_env_file, extract_reasoning_and_answer
+
+# Load environment variables from .env file if it exists
+load_env_file(__file__)
 
 
 # ========================================
@@ -146,7 +149,9 @@ def lookup_policy(query: str) -> str:
         return "Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
 
     # Initialize embeddings (must match ingestion)
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    # Use the factory function to get the correct embeddings model
+    # based on LLM_PROVIDER environment variable
+    embeddings = get_embeddings()
 
     # Load vector store
     connection = sqlite3.connect(str(db_path), check_same_thread=False)
@@ -386,21 +391,26 @@ def main():
     )
     args = parser.parse_args()
 
+    # Get provider info for display
+    provider = os.getenv("LLM_PROVIDER", "ollama")
+
     print("=" * 60)
     print("Step 3: LangGraph ReAct Agent")
+    print(f"Provider: {provider}")
     if args.thinking:
-        print("(Using Thinking Model: qwen3)")
+        print("Mode: Thinking (with reasoning traces)")
     print("=" * 60)
     print()
 
     # Initialize LLM
-    model_name = get_available_model(prefer_thinking=args.thinking)
-    print(f"🔗 Initializing LLM ({model_name})...")
-    llm = ChatOllama(
-        model=model_name,
+    # Use the factory function to get the correct LLM based on
+    # LLM_PROVIDER environment variable (ollama or google)
+    print(f"🔗 Initializing LLM...")
+    llm = get_llm(
+        prefer_thinking=args.thinking,
         temperature=0,
-        reasoning=True if args.thinking else False,
     )
+    print(f"✓ Connected to {llm.model}")
 
     # Bind tools to LLM
     tools = [lookup_policy, search_tech_events]
@@ -464,15 +474,18 @@ def main():
         print("Final Answer:")
         print("=" * 60)
 
-        if args.thinking and hasattr(final_message, 'additional_kwargs'):
-            reasoning = final_message.additional_kwargs.get("reasoning_content")
-            if reasoning:
-                print()
-                print("### Thinking Trace ###")
-                print(reasoning)
-                print("\n" + "="*60 + "\n")
-
-        print(final_message.content)
+        # Extract reasoning and answer using utility function
+        # This handles both Ollama and Google models properly
+        # Always use extract_reasoning_and_answer to handle different response formats
+        reasoning, final_answer = extract_reasoning_and_answer(final_message)
+        
+        if args.thinking and reasoning:
+            print()
+            print("### Thinking Trace ###")
+            print(reasoning)
+            print("\n" + "="*60 + "\n")
+        
+        print(final_answer)
         print()
 
     # Run in interactive or single-question mode

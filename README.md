@@ -124,10 +124,31 @@ python3 02_rag_lcel/ingest.py
 python3 02_rag_lcel/query.py
 ```
 
+### For LangGraph ReAct Agent (03_langgraph_react)
+
+The `agent.py` script uses the `LLM_PROVIDER` environment variable to automatically select both LLM and embeddings models:
+
+1. **Set up your provider** using the same `.env` configuration as above
+2. **Important:** When switching providers (Ollama ↔ Google), you **must re-run** `02_rag_lcel/ingest.py` to rebuild the vector database with the matching embeddings model
+   - The agent's `lookup_policy` tool uses the same embeddings model as the knowledge base
+   - Different providers use different embeddings models with incompatible vector spaces
+
+Example workflow when switching to Google:
+```bash
+# 1. Configure provider in .env
+echo "LLM_PROVIDER=google" >> .env
+echo "GOOGLE_API_KEY=your_key" >> .env
+
+# 2. Re-ingest knowledge base with Google embeddings (required!)
+python3 02_rag_lcel/ingest.py
+
+# 3. Run agent using Google models
+python3 03_langgraph_react/agent.py
+```
+
 ### For Other Scripts (Legacy Pattern)
 
 The following scripts still use the legacy pattern and require manual code changes:
-- `03_langgraph_react/agent.py`
 - `04_supervisor/supervisor.py`
 - `05_network/network.py`
 
@@ -151,7 +172,7 @@ model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
 llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
 ```
 
-**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py` and the RAG scripts for easier provider switching.
+**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py`, the RAG scripts, and `agent.py` for easier provider switching.
 
 ## Runnable Scripts
 
