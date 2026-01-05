@@ -91,7 +91,7 @@ User Query: "Who is the CEO?"
 │              SUPERVISOR MULTI-AGENT SYSTEM                   │
 └─────────────────────────────────────────────────────────────┘
 
-USER QUERY: "Who is the CEO of ACME Corpp?"
+USER QUERY: "Who is the CEO of ACME Corp?"
    │
    ▼
 ┌────────────────┐
@@ -175,7 +175,7 @@ else:
 
 **How it works:**
 1. Receives task from Supervisor
-2. Queries the ACME Corpp knowledge base
+2. Queries the ACME Corp knowledge base
 3. Performs similarity search (top 3 results)
 4. Returns findings to Supervisor
 
@@ -217,7 +217,7 @@ else:
 
 ## Workflow Execution
 
-### Example Flow: "Who is the CEO of ACME Corpp?"
+### Example Flow: "Who is the CEO of ACME Corp?"
 
 **Step 1: Supervisor Receives Query**
 ```
@@ -231,7 +231,7 @@ Decision: Need information → Route to RESEARCHER
    ✓ Retrieved 3 relevant documents
    ✓ Found: CEO information
 Returns: "[Researcher] I found the following information:
-         Alex Dupont is the CEO of ACME Corpp..."
+         Alex Dupont is the CEO of ACME Corp..."
 ```
 
 **Step 3: Supervisor Re-evaluates**
@@ -246,7 +246,7 @@ Decision: Have info, need content → Route to WRITER
    ✓ Synthesizing research findings
    ✓ Creating professional response
 Returns: "[Writer] Alex Dupont serves as the CEO of
-         ACME Corpp, leading the company's strategic..."
+         ACME Corp, leading the company's strategic..."
 ```
 
 **Step 5: Supervisor Re-evaluates**
@@ -272,7 +272,7 @@ Decision: All tasks complete → FINISH
 Final Answer:
 Based on the work of our specialized team:
 
-Alex Dupont serves as the CEO of ACME Corpp,
+Alex Dupont serves as the CEO of ACME Corp,
 leading the company's strategic...
 
 ---
@@ -388,7 +388,7 @@ python3 04_supervisor/supervisor.py --interactive
 
 ### Custom Question
 ```bash
-python3 04_supervisor/supervisor.py --question "What is ACME Corpp's vacation policy?"
+python3 04_supervisor/supervisor.py --question "What is ACME Corp's vacation policy?"
 ```
 
 ### Thinking Model Mode

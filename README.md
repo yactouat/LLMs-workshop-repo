@@ -1,4 +1,4 @@
-# DevFest 2025: Local LLMs, RAG, and Multi-Agent Architectures
+# Local LLMs, RAG, and Multi-Agent Architectures workshop
 
 A hands-on workshop providing a comprehensive beginner's guide to using local Large Language Models (LLMs), Retrieval-Augmented Generation (RAG) systems, and multi-agent architectures to build powerful and efficient applications.
 
@@ -26,8 +26,8 @@ The demos in this repository are numbered in ascending order (01, 02, 03, etc.) 
 ##### Local Models with Ollama
 1. **Ollama:** Download and install from [ollama.com](https://ollama.com)
 2. **Pull Base Models** (Run in terminal):
-   - `ollama pull llama3.1` || `ollama pull qwen3`
-   - `ollama pull nomic-embed-text`
+   - `ollama pull llama3.1` || `ollama pull qwen3` (for text generation)
+   - `ollama pull nomic-embed-text` (for embeddings/RAG - required for Steps 2-5)
 
 #### Cloud models
 
@@ -38,9 +38,10 @@ The demos in this repository are numbered in ascending order (01, 02, 03, etc.) 
    - Create an API key
    - Create a `.env` file in the project root with:
      ```
+     LLM_PROVIDER=google
      GOOGLE_API_KEY=your_api_key_here
      ```
-2. **Note:** Cloud models use `gemini-2.5-flash` by default and don't require local model downloads.
+2. **Note:** Cloud models use `gemini-3-flash-preview` for text generation and `gemini-embedding-001` for embeddings by default. No local model downloads required.
 
 ## Setting Up a Virtual Environment
 
@@ -100,9 +101,37 @@ You can also use inline environment variables:
 LLM_PROVIDER=google python3 01_local_llm/hello_world.py
 ```
 
+### For RAG Scripts (02_rag_lcel)
+
+The RAG scripts (`ingest.py` and `query.py`) also use the `LLM_PROVIDER` environment variable to automatically select embeddings models:
+
+1. **Set up your provider** using the same `.env` configuration as above
+2. **Important:** When switching providers (Ollama ↔ Google), you **must re-run** `ingest.py` to rebuild the vector database with the new embeddings model
+   - Ollama uses `nomic-embed-text` embeddings
+   - Google uses `gemini-embedding-001` embeddings
+   - These produce different vector dimensions and cannot be mixed
+
+Example workflow when switching to Google:
+```bash
+# 1. Configure provider in .env
+echo "LLM_PROVIDER=google" >> .env
+echo "GOOGLE_API_KEY=your_key" >> .env
+
+# 2. Re-ingest knowledge base with Google embeddings
+python3 02_rag_lcel/ingest.py
+
+# 3. Query using Google models
+python3 02_rag_lcel/query.py
+```
+
 ### For Other Scripts (Legacy Pattern)
 
-Other scripts (`query.py`, `agent.py`, etc.) still require manual code changes:
+The following scripts still use the legacy pattern and require manual code changes:
+- `03_langgraph_react/agent.py`
+- `04_supervisor/supervisor.py`
+- `05_network/network.py`
+
+To use cloud models with these scripts:
 
 1. **Set up your API key** (see Prerequisites above)
 2. **Modify the script** to use cloud models:
@@ -111,7 +140,7 @@ Other scripts (`query.py`, `agent.py`, etc.) still require manual code changes:
    - Uncomment the `ChatGoogleGenerativeAI` initialization
    - Uncomment the `load_dotenv()` import if needed
 
-Example pattern in older scripts:
+Example pattern in legacy scripts:
 ```python
 # Change from:
 model_name = get_available_model(prefer_thinking=args.thinking)
@@ -122,7 +151,7 @@ model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
 llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
 ```
 
-**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py` for easier provider switching.
+**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py` and the RAG scripts for easier provider switching.
 
 ## Runnable Scripts
 
@@ -145,7 +174,7 @@ No arguments.
 python3 02_rag_lcel/query.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corp?")
 - `--thinking`: Use thinking model to show reasoning process (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
 
 ### 03_langgraph_react/agent.py
@@ -153,7 +182,7 @@ python3 02_rag_lcel/query.py [--interactive] [--question "YOUR_QUESTION"] [--thi
 python3 03_langgraph_react/agent.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corp?")
 - `--thinking`: Use thinking model to show reasoning process (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the agent's `lookup_policy` tool.
@@ -163,7 +192,7 @@ python3 03_langgraph_react/agent.py [--interactive] [--question "YOUR_QUESTION"]
 python3 04_supervisor/supervisor.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corp?")
 - `--thinking`: Use qwen3 thinking model for supervisor decisions
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
@@ -173,7 +202,7 @@ python3 04_supervisor/supervisor.py [--interactive] [--question "YOUR_QUESTION"]
 python3 05_network/network.py [--interactive] [--question "YOUR_QUESTION"] [--thinking]
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
-- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corpp?")
+- `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corp?")
 - `--thinking`: Use qwen3 thinking model for agent decisions
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.

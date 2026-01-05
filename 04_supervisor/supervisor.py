@@ -82,7 +82,7 @@ def researcher_agent(state: SupervisorState) -> dict:
     Researcher Agent - Retrieves information from the knowledge base.
 
     This agent specializes in:
-    - Querying the ACME Corpp knowledge base (SQLite vector store)
+    - Querying the ACME Corp knowledge base (SQLite vector store)
     - Finding relevant company information
     - Retrieving policy documents and organizational details
 
@@ -109,7 +109,7 @@ def researcher_agent(state: SupervisorState) -> dict:
 
     # Setup database connection
     script_dir = Path(__file__).parent
-    db_path = script_dir.parent / "devfest.db"
+    db_path = script_dir.parent / "acme.db"
 
     if not db_path.exists():
         return {
@@ -130,7 +130,7 @@ def researcher_agent(state: SupervisorState) -> dict:
     connection.enable_load_extension(False)
 
     vectorstore = SQLiteVSS(
-        table="devfest_knowledge",
+        table="techsummit_knowledge",
         embedding=embeddings,
         connection=connection,
     )
@@ -186,7 +186,7 @@ def writer_agent(state: SupervisorState) -> dict:
         }
 
     # Prepare messages for writer
-    system_prompt = "You are a professional writer for ACME Corpp. Based on the research provided, write a clear, concise answer to the user's question."
+    system_prompt = "You are a professional writer for ACME Corp. Based on the research provided, write a clear, concise answer to the user's question."
     
     research_context = chr(10).join(context) if context else "No research context provided."
     
@@ -255,7 +255,7 @@ def fact_checker_agent(state: SupervisorState) -> dict:
         fact_check_result = """[Fact Checker] Verification Report:
 
 ✓ Information Sources: Verified against knowledge base
-✓ Policy Compliance: All statements align with ACME Corpp policies
+✓ Policy Compliance: All statements align with ACME Corp policies
 ✓ Factual Accuracy: Cross-referenced data points are consistent
 ✓ Quality Check: Content meets professional standards
 ✓ Completeness: Response addresses the user's question
@@ -446,8 +446,8 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of ACME Corpp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
+        default="Who is the CEO of ACME Corp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
     )
     parser.add_argument(
         "--thinking",

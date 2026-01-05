@@ -55,7 +55,7 @@ python3 05_network/network.py [--interactive] [--question "QUESTION"] [--thinkin
   - For Ollama: Uses qwen3 (or model specified by OLLAMA_THINKING_MODEL)
   - For Google: Uses model specified by GOOGLE_THINKING_MODEL
 - `--interactive`: Interactive mode for multiple questions
-- `--question "TEXT"`: Specify question (default: "Who is the CEO of ACME Corpp?")
+- `--question "TEXT"`: Specify question (default: "Who is the CEO of ACME Corp?")
 
 ### Testing Individual Components
 
@@ -75,13 +75,19 @@ python3 -c "from utils import get_available_model; print(get_available_model())"
 
 ### Model Provider System (utils.py)
 
-The `get_available_model()` function is the central abstraction for model selection:
+The repository provides factory functions for consistent model and embeddings selection:
 
-- **Local models (Ollama)**: Default behavior, checks for `qwen3` or `lama3.1`
-- **Cloud models (Google)**: Use `use_cloud=True` parameter, returns `gemini-2.5-flash`
-- **Thinking models**: Use `prefer_thinking=True` to prioritize qwen3 (shows reasoning)
+**`get_llm()` function** - Central abstraction for LLM selection:
+- **Local models (Ollama)**: Default behavior, uses configured model or auto-detects `qwen3`/`lama3.1`
+- **Cloud models (Google)**: When `LLM_PROVIDER=google`, returns `ChatGoogleGenerativeAI`
+- **Thinking models**: Use `prefer_thinking=True` to enable reasoning traces
 
-All scripts use this function to maintain consistent model selection across the workshop.
+**`get_embeddings()` function** - Central abstraction for embeddings selection:
+- **Local embeddings (Ollama)**: Default behavior, uses `nomic-embed-text`
+- **Cloud embeddings (Google)**: When `LLM_PROVIDER=google`, uses `gemini-embedding-001`
+- **Automatic consistency**: Both functions use the same `LLM_PROVIDER` environment variable
+
+All scripts use these factory functions to maintain consistent model selection across the workshop.
 
 ### SQLite + VSS Extension Pattern
 
@@ -101,9 +107,10 @@ This pattern appears in all RAG-related scripts and must be placed BEFORE any sq
 - Demonstrates model limitations without external knowledge
 
 **Step 2: RAG with LCEL (02_rag_lcel/)**
-- **Ingestion phase** (ingest.py): TextLoader → SemanticChunker → OllamaEmbeddings → SQLiteVSS
-- **Query phase** (query.py): LCEL chain using pipe operator (`|`) for: retriever | format_docs → prompt → llm → parser
-- Database shared at root: `devfest.db`
+- **Ingestion phase** (ingest.py): TextLoader → SemanticChunker → `get_embeddings()` → SQLiteVSS
+- **Query phase** (query.py): LCEL chain using pipe operator (`|`) for: retriever | format_docs → prompt → `get_llm()` → parser
+- **Embeddings**: Uses `get_embeddings()` factory for provider-agnostic embeddings (Ollama: `nomic-embed-text`, Google: `gemini-embedding-001`)
+- Database shared at root: `acme.db`
 
 **Step 3: ReAct Agent (03_langgraph_react/)**
 - **Pattern**: Reason → Act → Observe loop
@@ -135,23 +142,26 @@ All multi-agent patterns use Pydantic models with:
 
 ### Knowledge Base Architecture
 
-- **Storage**: SQLite with VSS extension at `devfest.db` (repository root)
-- **Table**: `devfest_knowledge`
-- **Embeddings**: `nomic-embed-text` from Ollama (or `text-embedding-004` from Google)
+- **Storage**: SQLite with VSS extension at `acme.db` (repository root)
+- **Table**: `techsummit_knowledge`
+- **Embeddings**: Automatically selected via `get_embeddings()` based on `LLM_PROVIDER`:
+  - Ollama (default): `nomic-embed-text` (768 dimensions)
+  - Google: `gemini-embedding-001` (768 dimensions)
 - **Chunking**: SemanticChunker with percentile-based splitting (breakpoint_threshold_amount=50)
 - **Retrieval**: `similarity_search()` with k=3 or k=5 depending on script
+- **Important**: Switching providers requires re-running `ingest.py` to rebuild vectors with matching embeddings model
 
 ## Key Patterns and Conventions
 
 ### Switching Between Local and Cloud Models
 
-**Modern Pattern (hello_world.py - uses `get_llm()` factory):**
+**Modern Pattern (uses `get_llm()` and `get_embeddings()` factories):**
 
-Scripts using `get_llm()` switch providers via environment variables only:
+Scripts using the factory functions switch providers via environment variables only:
 
 1. Create a `.env` file in repository root
 2. Set `LLM_PROVIDER=google` and `GOOGLE_API_KEY=your_key`
-3. No code changes needed - the factory handles everything
+3. No code changes needed - the factories handle everything
 
 Example `.env`:
 ```
@@ -161,9 +171,24 @@ GOOGLE_MODEL=gemini-3-flash-preview
 GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: specify thinking model
 ```
 
+**Scripts using modern pattern:**
+- `01_local_llm/hello_world.py` - Uses `get_llm()`
+- `02_rag_lcel/ingest.py` - Uses `get_embeddings()`
+- `02_rag_lcel/query.py` - Uses `get_llm()` and `get_embeddings()`
+
+**Important for RAG scripts:** When switching providers (Ollama ↔ Google):
+1. Update `.env` with new `LLM_PROVIDER`
+2. **Must re-run `ingest.py`** to rebuild vector database with matching embeddings
+3. Different providers use different embeddings models with incompatible vector spaces
+
 **Legacy Pattern (other scripts - direct instantiation):**
 
-Older scripts still use commented-out sections for switching:
+The following scripts still use the legacy pattern with direct model instantiation:
+- `03_langgraph_react/agent.py`
+- `04_supervisor/supervisor.py`
+- `05_network/network.py`
+
+To switch providers in legacy scripts:
 
 1. Import `load_dotenv()` and call it
 2. Change `get_available_model()` to use `use_cloud=True`
@@ -172,14 +197,16 @@ Older scripts still use commented-out sections for switching:
 
 Requires `.env` file with `GOOGLE_API_KEY`.
 
-**Note:** The workshop is transitioning all scripts to use the `get_llm()` factory pattern for cleaner provider abstraction.
+**Note:** The workshop is transitioning all scripts to use the factory pattern for cleaner provider abstraction.
 
 ### Thinking Model Support
 
 Scripts with `--thinking` flag:
 - **Ollama**: Use `reasoning=True` in ChatOllama initialization when model matches `OLLAMA_THINKING_MODEL`
 - **Google**: Use `reasoning=True` in ChatGoogleGenerativeAI initialization when model matches `GOOGLE_THINKING_MODEL`
-- Access reasoning via `response.additional_kwargs.get("reasoning_content")`
+- **Reasoning extraction**: Modern scripts use `extract_reasoning_and_answer()` utility function which handles both:
+  - Ollama format: reasoning in `response.additional_kwargs.get("reasoning_content")`
+  - Google format: reasoning in `response.content` as list of dicts with `"type": "thinking"`
 - Display thinking trace separately from final answer
 - Environment variables:
   - `OLLAMA_THINKING_MODEL`: Specifies which Ollama model supports thinking (e.g., "qwen3")
@@ -217,7 +244,7 @@ Two patterns:
 
 ## Important Notes
 
-- **Always run ingest.py first**: Steps 2b, 3, 4, and 5 require `devfest.db` to exist
+- **Always run ingest.py first**: Steps 2b, 3, 4, and 5 require `acme.db` to exist
 - **Python path manipulation**: Scripts add parent directory to `sys.path` for utils import
 - **Database location**: Shared at repository root for cross-demo usage
 - **Model fallback**: Scripts handle missing models gracefully with warnings

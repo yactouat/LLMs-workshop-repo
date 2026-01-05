@@ -5,11 +5,59 @@ Utility functions for the LLMs Workshop.
 This module provides helper functions used across multiple demo scripts.
 """
 
-from langchain_ollama import ChatOllama
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 import os
 import subprocess
 from pathlib import Path
+
+
+def load_env_file(reference_path=None):
+    """
+    Load environment variables from a .env file in the repository root.
+
+    This function provides a centralized way to load .env files across all scripts.
+    It gracefully handles cases where python-dotenv is not installed and where
+    the .env file doesn't exist.
+
+    Args:
+        reference_path: Optional path to use as reference (typically __file__ from
+                       the calling script). If None, uses utils.py location as reference.
+                       The function looks for .env in the repository root by going up
+                       one level from the reference path's parent directory.
+
+    Returns:
+        bool: True if .env file was loaded successfully, False otherwise
+
+    Example:
+        >>> # Load .env from repository root using calling script's location
+        >>> # (for scripts in subdirectories like 01_local_llm/, 02_rag_lcel/, etc.)
+        >>> load_env_file(__file__)
+        >>> 
+        >>> # Load .env from repository root using utils.py location (default)
+        >>> load_env_file()
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        # python-dotenv not installed, will rely on environment variables
+        return False
+
+    if reference_path is None:
+        # Use utils.py location as reference (utils.py is at repo root)
+        # For scripts at repo root, go up one level; for utils.py itself, use current dir
+        repo_root = Path(__file__).parent
+        env_path = repo_root / ".env"
+    else:
+        # For scripts in subdirectories, go up two levels: script -> subdir -> repo root
+        # This matches the pattern: Path(__file__).parent.parent / ".env"
+        repo_root = Path(reference_path).parent.parent
+        env_path = repo_root / ".env"
+
+    if env_path.exists():
+        load_dotenv(env_path)
+        return True
+    return False
 
 
 def get_llm(prefer_thinking: bool = False, temperature: float = 0.0, **kwargs):
@@ -158,6 +206,80 @@ def get_llm(prefer_thinking: bool = False, temperature: float = 0.0, **kwargs):
         )
 
 
+def get_embeddings(**kwargs):
+    """
+    Factory function that returns a configured embeddings model based on environment.
+
+    This function provides a clean abstraction for loading either Ollama or Google
+    embeddings models based on environment variables. It handles provider selection,
+    API key loading, and error handling automatically.
+
+    Environment Variables:
+        LLM_PROVIDER: "ollama" (default) or "google"
+        GOOGLE_API_KEY: Required when LLM_PROVIDER=google
+
+    Args:
+        **kwargs: Additional provider-specific parameters
+
+    Returns:
+        OllamaEmbeddings or GoogleGenerativeAIEmbeddings: Configured embeddings instance
+
+    Raises:
+        RuntimeError: If configuration is invalid or required dependencies are missing
+        ValueError: If LLM_PROVIDER has an invalid value
+
+    Example:
+        >>> # Use default Ollama provider
+        >>> embeddings = get_embeddings()
+        >>> vector = embeddings.embed_query("Hello world")
+
+        >>> # Use Google provider (requires GOOGLE_API_KEY in .env)
+        >>> # Set LLM_PROVIDER=google in .env first
+        >>> embeddings = get_embeddings()
+        >>> vectors = embeddings.embed_documents(["doc1", "doc2"])
+    """
+    provider = os.getenv("LLM_PROVIDER", "ollama").lower()
+
+    if provider == "ollama":
+        # Return configured OllamaEmbeddings instance
+        # nomic-embed-text is optimized for text embedding tasks
+        # Produces high-quality 768-dimensional vectors
+        return OllamaEmbeddings(
+            model="nomic-embed-text",  # Specialized embedding model from Ollama
+            **kwargs,
+        )
+
+    elif provider == "google":
+        # Check for API key
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GOOGLE_API_KEY environment variable is required when LLM_PROVIDER=google.\n"
+                "Setup instructions:\n"
+                "1. Get an API key from https://ai.google.dev/\n"
+                "2. Create a .env file in the repository root:\n"
+                "   LLM_PROVIDER=google\n"
+                "   GOOGLE_API_KEY=your_api_key_here\n"
+                "3. Or export the environment variable:\n"
+                "   export GOOGLE_API_KEY=your_api_key_here"
+            )
+
+        # Return configured GoogleGenerativeAIEmbeddings instance
+        # gemini-embedding-001 is optimized for semantic search
+        return GoogleGenerativeAIEmbeddings(
+            model="gemini-embedding-001",
+            google_api_key=api_key,
+            **kwargs,
+        )
+
+    else:
+        raise ValueError(
+            f"Invalid LLM_PROVIDER value: '{provider}'\n"
+            f"Valid options: 'ollama', 'google'\n"
+            f"Set LLM_PROVIDER environment variable to one of these values."
+        )
+
+
 def get_available_model(prefer_thinking: bool = False, use_cloud: bool = False) -> str:
     """
     Get an available Ollama model, checking for qwen3 first, then lama3.1.
@@ -183,7 +305,7 @@ def get_available_model(prefer_thinking: bool = False, use_cloud: bool = False) 
         >>> llm = ChatOllama(model=model)
     """
     if use_cloud:
-        return "gemini-2.5-flash"
+        return "gemini-3-flash-preview"
     else:
         try:
             # Get list of available models from Ollama
@@ -228,4 +350,67 @@ def get_available_model(prefer_thinking: bool = False, use_cloud: bool = False) 
                 "Ollama command not found. Please install Ollama first:\n"
                 "Visit https://ollama.ai for installation instructions."
             ) from None
+
+
+def extract_reasoning_and_answer(response):
+    """
+    Extract reasoning trace and final answer from an LLM response.
+    
+    This function handles different response formats:
+    - Gemini 3 models: response.content is a list of dicts with "type": "thinking" and "type": "text"
+    - Ollama models: reasoning is in response.additional_kwargs.get("reasoning_content"), 
+                     content is a string
+    
+    Args:
+        response: LLM response object (from ChatOllama or ChatGoogleGenerativeAI)
+    
+    Returns:
+        tuple: (reasoning, final_answer) where:
+            - reasoning: str or None - the reasoning trace if available
+            - final_answer: str - the final answer text
+    
+    Example:
+        >>> response = llm.invoke("Who is the CEO?")
+        >>> reasoning, answer = extract_reasoning_and_answer(response)
+        >>> if reasoning:
+        ...     print("### Thinking Trace ###")
+        ...     print(reasoning)
+        >>> print("### Final Answer ###")
+        >>> print(answer)
+    """
+    reasoning = None
+    final_answer = None
+    
+    # Check for Gemini 3 format (content as list of dicts)
+    # This applies to both thinking and non-thinking modes
+    if isinstance(response.content, list):
+        thinking_parts = []
+        text_parts = []
+        for part in response.content:
+            if isinstance(part, dict):
+                if part.get("type") == "thinking":
+                    thinking_parts.append(part.get("thinking", ""))
+                elif part.get("type") == "text":
+                    text_parts.append(part.get("text", ""))
+        if thinking_parts:
+            reasoning = "\n".join(thinking_parts)
+        if text_parts:
+            final_answer = "\n".join(text_parts)
+    
+    # For Ollama models: reasoning is in additional_kwargs
+    if not reasoning:
+        reasoning = response.additional_kwargs.get("reasoning_content")
+    
+    # Extract text content - handle both list format (Google) and string format (Ollama)
+    if final_answer is None:
+        if isinstance(response.content, str):
+            final_answer = response.content
+        elif isinstance(response.content, list):
+            # Already handled above, but fallback in case of unexpected format
+            final_answer = str(response.content)
+        else:
+            # Fallback: convert to string
+            final_answer = str(response.content)
+    
+    return reasoning, final_answer
 

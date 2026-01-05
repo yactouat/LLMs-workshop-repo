@@ -1,6 +1,6 @@
 # DevFest 2025 : LLMs Locaux, RAG et Architectures Multi-Agents
 
-Construire le Cerveau Interne de ACME Corpp
+Construire le Cerveau Interne de ACME Corp
 
 ---
 
@@ -16,7 +16,7 @@ Travaille actuellement chez Lamalo, une startup basée à Strasbourg, qui dével
 
 ## La Mission
 
-**Objectif :** Construire un système intelligent pour "ACME Corpp" totalement hors ligne.
+**Objectif :** Construire un système intelligent pour "ACME Corp" totalement hors ligne.
 
 **Pourquoi en Local ?**
 - Confidentialité (les données sensibles de l'entreprise ne quittent jamais votre infrastructure)
@@ -36,8 +36,8 @@ Travaille actuellement chez Lamalo, une startup basée à Strasbourg, qui dével
 
 **Ce Que Vous Verrez :**
 - Interaction directe avec un LLM local via Ollama
-- Le modèle tente de répondre : "Qui est le PDG de ACME Corpp ?"
-- Le modèle ne peut pas répondre car ACME Corpp n'est pas dans ses données d'entraînement
+- Le modèle tente de répondre : "Qui est le PDG de ACME Corp ?"
+- Le modèle ne peut pas répondre car ACME Corp n'est pas dans ses données d'entraînement
 
 **Qu'est-ce Que les Modèles "Thinking" ?**
 - Ajoutez le flag `--thinking` pour voir le processus de raisonnement du modèle

@@ -20,6 +20,7 @@ RAG (Retrieval-Augmented Generation) Overview:
 
 from pathlib import Path
 import sys
+import os
 
 # IMPORTANT: Use pysqlite3 instead of built-in sqlite3
 # pysqlite3 supports the VSS (Vector Similarity Search) extension
@@ -27,15 +28,16 @@ import sys
 __import__("pysqlite3")
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
+# Add parent directory to path to import utils
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils import get_embeddings, load_env_file
+
+# Load environment variables from .env file if it exists
+load_env_file(__file__)
+
 from langchain_community.document_loaders import TextLoader
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
-
-# ! if you're using Google
-# from dotenv import load_dotenv
-# load_dotenv()
 
 
 def main():
@@ -50,7 +52,7 @@ def main():
     script_dir = Path(__file__).parent
     knowledge_base_path = script_dir / "knowledge_base.md"
     # Database is stored at the root of the repository for sharing across demos
-    db_path = script_dir.parent / "devfest.db"
+    db_path = script_dir.parent / "acme.db"
 
     # Validate that the knowledge base file exists
     if not knowledge_base_path.exists():
@@ -78,20 +80,27 @@ def main():
     # Embeddings convert text into numerical vectors (arrays of numbers)
     # Similar text = similar vectors, which enables semantic search
     #
-    # Why "nomic-embed-text"?
-    # - Optimized for text embedding tasks
-    # - Smaller and faster than general-purpose LLMs
-    # - Produces high-quality 768-dimensional vectors
+    # The get_embeddings() factory function automatically selects the right
+    # embeddings model based on the LLM_PROVIDER environment variable:
+    # - Ollama (default): "nomic-embed-text" - optimized for text embedding
+    # - Google: "gemini-embedding-001" - optimized for semantic search
+    #
+    # This ensures embeddings match your LLM provider for consistent behavior
     print("🔗 Initializing embeddings for semantic chunking...")
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text",  # Specialized embedding model from Ollama
-    )
-
-
-    # ! same goes for the Google Cloud Model (to use in other)
-    # embeddings = GoogleGenerativeAIEmbeddings(
-    #     model="text-embedding-004",
-    # )
+    
+    # Determine which model will be used based on provider
+    provider = os.getenv("LLM_PROVIDER", "ollama").lower()
+    if provider == "ollama":
+        model_name = "nomic-embed-text"
+    elif provider == "google":
+        model_name = "gemini-embedding-001"
+    else:
+        model_name = "unknown"
+    
+    print(f"   Provider: {provider}")
+    print(f"   Model: {model_name}")
+    
+    embeddings = get_embeddings()
     print("✓ Embedding model initialized")
     print()
 
@@ -121,14 +130,22 @@ def main():
     )
     chunks = text_splitter.split_documents(documents)
     print(f"✓ Created {len(chunks)} chunks")
+    
+    # Filter out empty chunks (chunks with empty or whitespace-only content)
+    # Some chunkers can create empty chunks, which cause embedding APIs to fail
+    original_count = len(chunks)
+    chunks = [chunk for chunk in chunks if chunk.page_content.strip()]
+    if len(chunks) < original_count:
+        print(f"   (Filtered out {original_count - len(chunks)} empty chunk(s))")
     print()
 
     # Show a preview of the first chunk to verify chunking worked correctly
-    print("Sample chunk:")
-    print("-" * 60)
-    print(chunks[0].page_content[:200] + "...")
-    print("-" * 60)
-    print()
+    if chunks:
+        print("Sample chunk:")
+        print("-" * 60)
+        print(chunks[0].page_content[:200] + "...")
+        print("-" * 60)
+        print()
 
     # ========================================
     # STEP 4: Create Vector Store in SQLite
@@ -157,7 +174,7 @@ def main():
     vectorstore = SQLiteVSS.from_documents(
         documents=chunks,  # The semantic chunks we created
         embedding=embeddings,  # The embedding model to use
-        table="devfest_knowledge",  # Name of the table in SQLite
+        table="techsummit_knowledge",  # Name of the table in SQLite
         db_file=str(db_path),  # Path to the database file
     )
 
@@ -195,7 +212,7 @@ def main():
     print(f"  • Loaded: {len(documents)} document(s)")
     print(f"  • Split into: {len(chunks)} chunks")
     print(f"  • Stored in: {db_path}")
-    print(f"  • Table: devfest_knowledge")
+    print(f"  • Table: techsummit_knowledge")
     print()
     print("Next step: Run query.py to ask questions!")
 

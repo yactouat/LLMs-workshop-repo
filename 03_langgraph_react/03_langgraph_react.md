@@ -68,16 +68,16 @@ It's an agent pattern where the model:
 │                    ReAct Agent Loop                       │
 └──────────────────────────────────────────────────────────┘
 
-1. User Query: "Who is the CEO of ACME Corpp?"
+1. User Query: "Who is the CEO of ACME Corp?"
    ↓
 2. Agent Reasoning:
-   "I need to look up information about ACME Corpp's CEO"
+   "I need to look up information about ACME Corp's CEO"
    ↓
 3. Agent Action:
-   Call tool: lookup_policy("CEO of ACME Corpp")
+   Call tool: lookup_policy("CEO of ACME Corp")
    ↓
 4. Tool Execution:
-   Returns: "Alex Dupont is the CEO of ACME Corpp..."
+   Returns: "Alex Dupont is the CEO of ACME Corp..."
    ↓
 5. Agent Observation:
    "I received information about the CEO"
@@ -86,7 +86,7 @@ It's an agent pattern where the model:
    "I now have enough information to answer"
    ↓
 7. Agent Response:
-   "The CEO of ACME Corpp is Alex Dupont"
+   "The CEO of ACME Corp is Alex Dupont"
 ```
 
 ## The Tools
@@ -95,7 +95,7 @@ Our ReAct agent has access to two tools:
 
 ### 1. `lookup_policy(query: str)` - Real Tool
 - **Purpose**: Queries the SQLite vector store (knowledge base)
-- **When to use**: Questions about ACME Corpp policies, people, or information
+- **When to use**: Questions about ACME Corp policies, people, or information
 - **How it works**:
   - Embeds the query
   - Finds similar chunks in the vector store
@@ -179,7 +179,7 @@ The agent script (`agent.py`) implements:
 
 1. **Pydantic State Management**: Uses Pydantic `BaseModel` for type-safe state tracking
 2. **Tools Definition**:
-   - `lookup_policy` - Queries SQLite vector store for ACME Corpp information
+   - `lookup_policy` - Queries SQLite vector store for ACME Corp information
    - `search_tech_events` - Returns mock tech event data (clearly marked as demo content)
 3. **Agent Node**: Decides which tool to use (if any) based on the query
 4. **Tool Node**: Built-in `ToolNode` that executes the chosen tool
@@ -222,17 +222,17 @@ python3 03_langgraph_react/agent.py --interactive --thinking
 ## Expected Behavior
 
 ### Example 1: Using the Policy Tool
-**Question**: "Who is the CEO of ACME Corpp?"
+**Question**: "Who is the CEO of ACME Corp?"
 
 **Agent Flow**:
 1. Agent receives query
-2. Reasons: "I need information about ACME Corpp"
-3. Acts: Calls `lookup_policy("CEO of ACME Corpp")`
+2. Reasons: "I need information about ACME Corp"
+3. Acts: Calls `lookup_policy("CEO of ACME Corp")`
 4. Observes: Gets context about CEO from knowledge base
 5. Reasons: "I have the information needed"
 6. Acts: Responds with answer
 
-**Output**: "The CEO of ACME Corpp is Alex Dupont..."
+**Output**: "The CEO of ACME Corp is Alex Dupont..."
 
 ### Example 2: Using the Tech Events Tool
 **Question**: "What AI conferences are happening this year?"

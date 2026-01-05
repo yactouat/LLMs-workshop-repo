@@ -112,7 +112,7 @@ Alternative Flow:
 │              NETWORK MULTI-AGENT SYSTEM                      │
 └─────────────────────────────────────────────────────────────┘
 
-USER QUERY: "Who is the CEO of ACME Corpp?"
+USER QUERY: "Who is the CEO of ACME Corp?"
    │
    ▼
 ┌────────────────┐
@@ -335,7 +335,7 @@ def handle_tool_calls(state: NetworkState) -> dict:
 
 ## Workflow Execution
 
-### Example Flow: "Who is the CEO of ACME Corpp?"
+### Example Flow: "Who is the CEO of ACME Corp?"
 
 **Step 1: Researcher Starts**
 ```
@@ -388,7 +388,7 @@ Action: Provides final answer (sets next_agent to "FINISH")
 ```
 Final Answer:
 [Fact Checker] Based on verified information from the knowledge base, 
-Alex Dupont serves as the CEO of ACME Corpp...
+Alex Dupont serves as the CEO of ACME Corp...
 ```
 
 ### Alternative Flow Example
@@ -584,7 +584,7 @@ python3 05_network/network.py --interactive
 
 ### Custom Question
 ```bash
-python3 05_network/network.py --question "What is ACME Corpp's vacation policy?"
+python3 05_network/network.py --question "What is ACME Corp's vacation policy?"
 ```
 
 ### Thinking Model Mode

@@ -4,9 +4,9 @@
 Implement context injection using SQLite for vector storage and demonstrate LangChain Expression Language (LCEL) for building RAG pipelines. This step shows how to augment LLM capabilities with external knowledge to answer questions beyond their training data.
 
 ## Prerequisites
+
 Before starting this step, ensure you have:
 - Completed Step 1 (Local LLM Hello World)
-- Ollama running with models pulled
 - Python virtual environment activated
 - SQLite with vector extensions support
 
@@ -16,7 +16,7 @@ Before starting this step, ensure you have:
 - How to build sequential chains using the pipe operator
 - How to store and retrieve embeddings from SQLite
 - How RAG solves the "Context Horizon" problem
-- How to use thinking models (qwen3) to expose reasoning in RAG pipelines
+- How to use thinking models (e.g. `qwen3`) to expose reasoning in RAG pipelines
 
 ## The Architecture
 
@@ -29,7 +29,7 @@ INGESTION PHASE (One-time setup):
 ┌──────────────┐    ┌──────────┐    ┌───────────┐    ┌──────────┐
 │ knowledge_   │───▶│ Semantic │───▶│  Embed    │───▶│  SQLite  │
 │ base.md      │    │ Chunking │    │  Vectors  │    │  Vector  │
-│              │    │ (Embed)  │    │ (Ollama)  │    │   DB     │
+│              │    │ (Embed)  │    │           │    │   DB     │
 └──────────────┘    └──────────┘    └───────────┘    └──────────┘
 
 QUERY PHASE (Runtime):
@@ -37,14 +37,14 @@ QUERY PHASE (Runtime):
 │  User Query  │───▶│  Embed   │───▶│  Search   │
 │ "Who is CEO?"│    │  Query   │    │  Similar  │
 └──────────────┘    └──────────┘    │  Vectors  │
-                                     └─────┬─────┘
+                                    └─────┬─────┘
                                            │
                     ┌──────────────────────┘
                     │ Retrieved Context
                     ▼
 ┌──────────────┐    ┌──────────┐    ┌───────────┐    ┌──────────┐
 │   Prompt     │───▶│   LLM    │───▶│  Output   │───▶│ Response │
-│  Template    │    │ (Ollama) │    │  Parser   │    │ to User  │
+│  Template    │    │          │    │  Parser   │    │ to User  │
 │+ Context     │    │          │    │           │    │          │
 │+ Query       │    │          │    │           │    │          │
 └──────────────┘    └──────────┘    └───────────┘    └──────────┘
@@ -78,13 +78,13 @@ QUERY PHASE (Runtime):
 ### Basic LCEL Example:
 
 ```python
-from langchain_ollama import ChatOllama
+from utils import get_llm
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 
 # Define components
 prompt = ChatPromptTemplate.from_template("Tell me a joke about {topic}")
-model = ChatOllama(model="lama3.1")
+model = get_llm(temperature=0)  # Uses utility function for provider/model selection
 parser = StrOutputParser()
 
 # Chain them together with pipes
@@ -147,9 +147,15 @@ LLMs have a **context window** (e.g., 4K, 8K, 128K tokens) that limits how much 
 The ingestion script performs these steps:
 
 1. **Load** the knowledge base markdown file
-2. **Initialize** embeddings model (Ollama with nomic-embed-text)
+2. **Initialize** embeddings model using `get_embeddings()` factory function
 3. **Split** into semantic chunks based on content similarity (using SemanticChunker)
 4. **Store** chunks and their vector embeddings in SQLite with vector extension
+
+**Embeddings Provider Selection**: The `get_embeddings()` utility function automatically selects the appropriate embeddings model based on your `LLM_PROVIDER` environment variable:
+- **Ollama** (default): Uses `nomic-embed-text` - optimized for text embedding tasks
+- **Google**: Uses `gemini-embedding-001` - optimized for semantic search
+
+This ensures your embeddings provider matches your LLM provider for consistent behavior and configuration.
 
 **Semantic Chunking**: Instead of splitting text at fixed character counts, SemanticChunker uses embeddings to identify natural semantic boundaries. It splits text into sentences, groups them, and creates chunks where semantic similarity changes significantly. This maintains topic coherence and improves retrieval quality.
 
@@ -157,17 +163,20 @@ The ingestion script performs these steps:
 python3 02_rag_lcel/ingest.py
 ```
 
-This creates `devfest.db` with embedded knowledge.
+This creates `acme.db` with embedded knowledge.
 
 ### 2. Query Phase (`query.py`)
 
 The query script demonstrates LCEL in action:
 
-1. **Embed** the user's query
-2. **Retrieve** the most similar chunks from SQLite
-3. **Build** a prompt with context + query
-4. **Chain** components using LCEL pipes
-5. **Execute** the chain to get an answer
+1. **Initialize** embeddings model using `get_embeddings()` (must match ingestion model)
+2. **Embed** the user's query
+3. **Retrieve** the most similar chunks from SQLite
+4. **Build** a prompt with context + query
+5. **Chain** components using LCEL pipes
+6. **Execute** the chain to get an answer
+
+**Important**: The embeddings model used for querying must match the one used during ingestion. The `get_embeddings()` function ensures consistency by using the same `LLM_PROVIDER` setting for both phases.
 
 ```bash
 python3 02_rag_lcel/query.py
@@ -183,7 +192,7 @@ python3 02_rag_lcel/query.py --interactive
 
 ### 4. Thinking Model Mode
 
-Use the `--thinking` flag to leverage the `qwen3` thinking model, which shows its reasoning process:
+Use the `--thinking` flag to leverage a thinking model, which shows its reasoning process:
 
 ```bash
 python3 02_rag_lcel/query.py --thinking
@@ -199,8 +208,10 @@ python3 02_rag_lcel/query.py --interactive --thinking
 
 Thinking models like `qwen3` expose their internal reasoning process. When using the `--thinking` flag:
 - The model generates a "thinking trace" that shows how it processes the context and arrives at its answer
-- LangChain's `reasoning=True` parameter parses the `<think>` blocks from the model output
-- The reasoning is extracted to `response.additional_kwargs['reasoning_content']`
+- LangChain's `reasoning=True` parameter parses the thinking blocks from the model output
+- Modern scripts use the `extract_reasoning_and_answer()` utility function which handles both:
+  - **Ollama format**: reasoning in `response.additional_kwargs['reasoning_content']`
+  - **Google format**: reasoning in `response.content` as list of dicts with `"type": "thinking"`
 - You see both the **reasoning trace** (the "how") and the **final answer** (the "what")
 
 This is particularly useful in RAG scenarios because you can see:
@@ -214,14 +225,14 @@ This is particularly useful in RAG scenarios because you can see:
 ```
 02_rag_lcel/
 ├── 02_rag_lcel.md          # This documentation
-├── knowledge_base.md        # Sample knowledge base (ACME Corpp info)
+├── knowledge_base.md        # Sample knowledge base (ACME Corp info)
 ├── ingest.py                # Loads and embeds knowledge into SQLite
 └── query.py                 # Queries using LCEL chains
 ```
 
 ## Expected Results
 
-When you ask: **"Who is the CEO of ACME Corpp?"**
+When you ask: **"Who is the CEO of ACME Corp?"**
 
 - **Without RAG** (Step 1): Model doesn't know
 - **With RAG** (Step 2): Model correctly answers using retrieved context
@@ -280,11 +291,19 @@ Proceed to **Step 3: LangGraph ReAct** where we'll add dynamic decision-making a
 
 **Issue**: Model not found (lama3.1 or qwen3)
 - **Solution**: Pull the models with `ollama pull lama3.1` and `ollama pull qwen3`
-- **Solution**: Pull the embedding model with `ollama pull nomic-embed-text`
+
+**Issue**: Embeddings model not found
+- **Ollama**: Pull the embedding model with `ollama pull nomic-embed-text`
+- **Google**: Ensure `GOOGLE_API_KEY` is set in your `.env` file and `LLM_PROVIDER=google`
 
 **Issue**: Empty results from retriever
 - **Solution**: Re-run `ingest.py` to ensure knowledge base is properly embedded
+- **Solution**: If you switched providers (Ollama ↔ Google), you must re-run `ingest.py` to re-embed the knowledge base with the new embeddings model
+
+**Issue**: Vector dimension mismatch errors
+- **Solution**: This occurs when query embeddings don't match ingestion embeddings (e.g., switching from Ollama to Google without re-ingesting)
+- **Solution**: Re-run `ingest.py` after changing `LLM_PROVIDER` to rebuild the vector database with matching embeddings
 
 **Issue**: No reasoning trace when using `--thinking`
 - **Solution**: Ensure you're using `qwen3` or another thinking model that generates `<think>` blocks
-- **Solution**: Verify `reasoning=True` is set in the `ChatOllama` initialization
+- **Solution**: Verify that `get_llm(prefer_thinking=True)` is used and the configured thinking model matches your environment variables (e.g., `OLLAMA_THINKING_MODEL` or `GOOGLE_THINKING_MODEL`)

@@ -32,10 +32,11 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
+from utils import get_llm, get_embeddings, load_env_file, extract_reasoning_and_answer
 
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+# Load environment variables from .env file if it exists
+load_env_file(__file__)
+
 from langchain_community.vectorstores import SQLiteVSS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -73,8 +74,8 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of ACME Corpp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
+        default="Who is the CEO of ACME Corp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
     )
     parser.add_argument(
         "--thinking",
@@ -86,14 +87,14 @@ def main():
     print("=" * 60)
     print("Step 2: RAG with LCEL - Query Demo")
     if args.thinking:
-        print("(Using Thinking Model: qwen3)")
+        print("(Using Thinking Model with reasoning traces)")
     print("=" * 60)
     print()
 
     # Define paths
     script_dir = Path(__file__).parent
     # Database is stored at the root of the repository for sharing across demos
-    db_path = script_dir.parent / "devfest.db"
+    db_path = script_dir.parent / "acme.db"
 
     # Validate that the database exists (created by ingest.py)
     if not db_path.exists():
@@ -108,7 +109,10 @@ def main():
     # ========================================
     # CRITICAL: Must use the SAME embedding model as during ingestion
     # Different models produce incompatible vector spaces
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    #
+    # The get_embeddings() factory function ensures we use the same model
+    # that was used during ingestion (controlled by LLM_PROVIDER env var)
+    embeddings = get_embeddings()
 
     # ========================================
     # STEP 2: Load the Vector Store
@@ -127,7 +131,7 @@ def main():
 
     # Create the vector store interface
     vectorstore = SQLiteVSS(
-        table="devfest_knowledge",     # Same table name from ingestion
+        table="techsummit_knowledge",     # Same table name from ingestion
         embedding=embeddings,          # Same embedding model from ingestion
         connection=connection,         # SQLite connection with VSS loaded
     )
@@ -139,15 +143,14 @@ def main():
     # ========================================
     # This is the language model that will generate the final answer
     # based on the retrieved context
-    # Choose model based on --thinking flag and availability
-    model_name = get_available_model(prefer_thinking=args.thinking)
-
-    print(f"🔗 Connecting to Ollama LLM ({model_name})...")
-    llm = ChatOllama(
-        model=model_name,
+    # Use the utility function to get a configured LLM instance
+    # This handles provider selection (Ollama/Google), model detection,
+    # and reasoning configuration automatically
+    print("🔗 Initializing LLM...")
+    llm = get_llm(
+        prefer_thinking=args.thinking,
         temperature=0,  # 0 = deterministic, 1 = creative
                         # For factual Q&A, we want deterministic responses
-        reasoning=True if args.thinking else False,  # Enable reasoning for thinking models
     )
     print("✓ LLM initialized")
     print()
@@ -163,7 +166,7 @@ def main():
     # - Context placeholder {context} - filled with retrieved chunks
     # - Question placeholder {question} - filled with user's question
     # - Clear instruction to admit when answer isn't in context
-    template = """You are a helpful assistant answering questions about ACME Corpp.
+    template = """You are a helpful assistant answering questions about ACME Corp.
 Use the following context to answer the question. If you cannot answer based on the context, say so.
 
 Context:
@@ -289,16 +292,21 @@ Answer:"""
             )
             response = chain_with_reasoning.invoke(question)
 
+            # Extract reasoning and answer using utility function
+            reasoning, final_answer = extract_reasoning_and_answer(response)
+
             # Display the reasoning trace
-            reasoning = response.additional_kwargs.get("reasoning_content")
             if reasoning:
                 print("### Thinking Trace ###")
                 print(reasoning)
                 print("\n" + "="*60 + "\n")
+            else:
+                print("No reasoning trace found (Model might not have generated one).")
+                print()
 
             # Display the final answer
             print("### Final Answer ###")
-            print(response.content)
+            print(final_answer)
         else:
             # The magic happens here - LCEL handles all the data flow automatically
             # No need to manually pass data between components!

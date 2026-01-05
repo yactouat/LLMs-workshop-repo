@@ -182,9 +182,12 @@ llm = ChatOllama(
 # Invoke the model
 response = llm.invoke("Explain why the sky is blue.")
 
+# Modern approach: Use the utility function (handles both Ollama and Google formats)
+from utils import extract_reasoning_and_answer
+reasoning, final_answer = extract_reasoning_and_answer(response)
+
 # 1. The Thinking Trace (Reasoning)
 # This is where the model's hidden "thought process" is stored
-reasoning = response.additional_kwargs.get("reasoning_content")
 if reasoning:
     print("### Thinking Trace ###")
     print(reasoning)
@@ -194,7 +197,11 @@ else:
 
 # 2. The Final Answer
 print("### Final Answer ###")
-print(response.content)
+print(final_answer)
+
+# Alternative: Direct access (for educational purposes)
+# For Ollama: reasoning = response.additional_kwargs.get("reasoning_content")
+# For Google: reasoning is in response.content as list of dicts with "type": "thinking"
 ```
 
 ### Running the Thinking Model Demo

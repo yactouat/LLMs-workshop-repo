@@ -123,14 +123,14 @@ class AgentState(BaseModel):
 @tool
 def lookup_policy(query: str) -> str:
     """
-    Query the ACME Corpp knowledge base (SQLite vector store) for information
+    Query the ACME Corp knowledge base (SQLite vector store) for information
     about company policies, people, culture, and other organizational details.
 
     Use this tool when the user asks about:
     - Company leadership (CEO, executives)
     - Company policies (vacation, remote work, etc.)
     - Company culture and values
-    - General information about ACME Corpp
+    - General information about ACME Corp
 
     Args:
         query: The search query to find relevant information
@@ -140,7 +140,7 @@ def lookup_policy(query: str) -> str:
     """
     # Setup database connection
     script_dir = Path(__file__).parent
-    db_path = script_dir.parent / "devfest.db"
+    db_path = script_dir.parent / "acme.db"
 
     if not db_path.exists():
         return "Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
@@ -156,7 +156,7 @@ def lookup_policy(query: str) -> str:
     connection.enable_load_extension(False)
 
     vectorstore = SQLiteVSS(
-        table="devfest_knowledge",
+        table="techsummit_knowledge",
         embedding=embeddings,
         connection=connection,
     )
@@ -376,8 +376,8 @@ def main():
     parser.add_argument(
         "--question",
         type=str,
-        default="Who is the CEO of ACME Corpp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corpp?')"
+        default="Who is the CEO of ACME Corp?",
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
     )
     parser.add_argument(
         "--thinking",
@@ -415,7 +415,7 @@ def main():
     print()
 
     print("Available tools:")
-    print("  1. lookup_policy - Query ACME Corpp knowledge base")
+    print("  1. lookup_policy - Query ACME Corp knowledge base")
     print("  2. search_tech_events - Find upcoming tech conferences")
     print()
 
