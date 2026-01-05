@@ -32,7 +32,6 @@ __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import sqlite_vss
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.graph import StateGraph, END
@@ -41,7 +40,10 @@ from pydantic import BaseModel, Field, ConfigDict
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
+from utils import get_llm, get_embeddings, load_env_file, extract_reasoning_and_answer
+
+# Load environment variables from .env file if it exists
+load_env_file(__file__)
 
 
 # ========================================
@@ -120,7 +122,9 @@ def researcher_agent(state: SupervisorState) -> dict:
         }
 
     # Initialize embeddings
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    # Use the factory function to get the correct embeddings model
+    # based on LLM_PROVIDER environment variable
+    embeddings = get_embeddings()
 
     # Load vector store
     connection = sqlite3.connect(str(db_path), check_same_thread=False)
@@ -205,12 +209,21 @@ Write a professional, helpful response:"""
         HumanMessage(content=user_prompt)
     ])
 
-    written_content = f"[Writer] {response.content}"
+    # Extract reasoning and answer using utility function
+    # This handles both Ollama and Google models properly
+    reasoning, final_answer = extract_reasoning_and_answer(response)
+    
+    # Store reasoning in additional_kwargs if available, for later retrieval
+    # Also include it in message content with a marker for supervisor to extract
+    written_content = f"[Writer] {final_answer}"
+    message_kwargs = {}
+    if reasoning:
+        message_kwargs["reasoning_content"] = reasoning
 
     print("   ✓ Content generated")
 
     return {
-        "messages": [AIMessage(content=written_content)],
+        "messages": [AIMessage(content=written_content, additional_kwargs=message_kwargs)],
         "next_agent": "supervisor"
     }
 
@@ -327,12 +340,15 @@ def supervisor_agent(state: SupervisorState) -> dict:
         # All workers have completed their tasks
         print("   → All workers completed. Synthesizing final answer...")
 
-        # Extract the writer's content for final response
+        # Extract the writer's content and reasoning for final response
         writer_content = None
+        writer_reasoning = None
         for msg in state.messages:
             if isinstance(msg, AIMessage) and "[Writer]" in msg.content:
                 # Remove the [Writer] prefix for clean output
                 writer_content = msg.content.replace("[Writer] ", "")
+                # Extract reasoning if available
+                writer_reasoning = msg.additional_kwargs.get("reasoning_content")
                 break
 
         final_answer = f"""Based on the work of our specialized team:
@@ -342,8 +358,13 @@ def supervisor_agent(state: SupervisorState) -> dict:
 ---
 (This answer was produced through coordination of Researcher, Writer, and Fact Checker agents)"""
 
+        # Preserve reasoning in final message if available
+        final_message_kwargs = {}
+        if writer_reasoning:
+            final_message_kwargs["reasoning_content"] = writer_reasoning
+
         return {
-            "messages": [AIMessage(content=final_answer)],
+            "messages": [AIMessage(content=final_answer, additional_kwargs=final_message_kwargs)],
             "next_agent": "FINISH"
         }
 
@@ -464,14 +485,14 @@ def main():
     print()
 
     # Initialize LLM
-    model_name = get_available_model(prefer_thinking=args.thinking)
-    print(f"🔗 Initializing LLM ({model_name})...")
-    llm = ChatOllama(
-        model=model_name,
+    # Use the factory function to get the correct LLM based on
+    # LLM_PROVIDER environment variable (ollama or google)
+    print(f"🔗 Initializing LLM...")
+    llm = get_llm(
+        prefer_thinking=args.thinking,
         temperature=0,
-        reasoning=True if args.thinking else False,
     )
-    print("✓ LLM initialized")
+    print(f"✓ LLM initialized ({llm.model})")
     print()
 
     # Create the supervisor graph
@@ -509,11 +530,23 @@ def main():
         # Get final response
         final_message = final_state["messages"][-1]
 
+        # Extract reasoning and answer using utility function
+        # This handles both Ollama and Google models properly
+        # Always use extract_reasoning_and_answer to handle different response formats
+        reasoning, final_answer = extract_reasoning_and_answer(final_message)
+
         # Display result
         print("\n" + "=" * 60)
         print("Final Answer:")
         print("=" * 60)
-        print(final_message.content)
+        
+        if args.thinking and reasoning:
+            print()
+            print("### Thinking Trace ###")
+            print(reasoning)
+            print("\n" + "="*60 + "\n")
+        
+        print(final_answer)
         print()
 
     # Run in interactive or single-question mode

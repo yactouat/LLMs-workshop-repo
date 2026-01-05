@@ -7,7 +7,7 @@ Learn how to build a multi-agent system with centralized control where a Supervi
 Before starting this step, ensure you have:
 - Completed Step 3 (LangGraph ReAct)
 - The knowledge base ingested into SQLite (run `02_rag_lcel/ingest.py`)
-- Ollama running with models pulled
+- Ollama or Google env var set for loading given models
 - Python virtual environment activated
 
 ## What You'll Learn
@@ -22,7 +22,7 @@ Before starting this step, ensure you have:
 ### ReAct Agent (Step 3)
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    Single Agent + Tools                   │
+│                    Single Agent + Tools                  │
 └──────────────────────────────────────────────────────────┘
 
 User Query: "Who is the CEO?"
@@ -162,7 +162,7 @@ else:
     return {"next_agent": "FINISH"}
 ```
 
-**Key Function**: `supervisor_agent()` in supervisor.py:280
+**Key Function**: `supervisor_agent()` in supervisor.py
 
 ### 2. Researcher Agent (Information Gatherer)
 **Role**: Retrieves information from the knowledge base
@@ -179,7 +179,7 @@ else:
 3. Performs similarity search (top 3 results)
 4. Returns findings to Supervisor
 
-**Key Function**: `researcher_agent()` in supervisor.py:80
+**Key Function**: `researcher_agent()` in supervisor.py
 
 ### 3. Writer Agent (Content Generator)
 **Role**: Creates well-formatted, professional responses
@@ -196,7 +196,7 @@ else:
 3. Focuses on clarity and professionalism
 4. Returns written content to Supervisor
 
-**Key Function**: `writer_agent()` in supervisor.py:155
+**Key Function**: `writer_agent()` in supervisor.py
 
 ### 4. Fact Checker Agent (Quality Assurance)
 **Role**: Validates information and ensures quality
@@ -213,7 +213,7 @@ else:
 - Run compliance rule engines
 - Check citations and references
 
-**Key Function**: `fact_checker_agent()` in supervisor.py:218
+**Key Function**: `fact_checker_agent()` in supervisor.py
 
 ## Workflow Execution
 
@@ -331,7 +331,7 @@ def route_to_agent(state: SupervisorState) -> Literal["researcher", "writer", "f
         return "supervisor"
 ```
 
-**Key Function**: `route_to_agent()` in supervisor.py:354
+**Key Function**: `route_to_agent()` in supervisor.py
 
 ### Graph Structure
 
@@ -366,7 +366,7 @@ workflow.add_edge("writer", "supervisor")
 workflow.add_edge("fact_checker", "supervisor")
 ```
 
-**Key Function**: `create_supervisor_graph()` in supervisor.py:384
+**Key Function**: `create_supervisor_graph()` in supervisor.py
 
 ## Running the Supervisor System
 

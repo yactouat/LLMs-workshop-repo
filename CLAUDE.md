@@ -126,6 +126,7 @@ This pattern appears in all RAG-related scripts and must be placed BEFORE any sq
 - **Flow**: supervisor → worker → supervisor (hierarchical loop)
 - **Decision logic**: Supervisor analyzes conversation state and routes to appropriate worker
 - Workers always return control to supervisor
+- **LLM/Embeddings**: Uses `get_llm()` and `get_embeddings()` factories for provider-agnostic model selection
 
 **Step 5: Network/Swarm Pattern (05_network/)**
 - **Pattern**: Peer-to-peer collaboration without central controller
@@ -177,6 +178,7 @@ GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: specify thinking model
 - `02_rag_lcel/ingest.py` - Uses `get_embeddings()`
 - `02_rag_lcel/query.py` - Uses `get_llm()` and `get_embeddings()`
 - `03_langgraph_react/agent.py` - Uses `get_llm()` and `get_embeddings()`
+- `04_supervisor/supervisor.py` - Uses `get_llm()` and `get_embeddings()`
 
 **Important for RAG scripts and agent:** When switching providers (Ollama ↔ Google):
 1. Update `.env` with new `LLM_PROVIDER`
@@ -187,7 +189,6 @@ GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: specify thinking model
 **Legacy Pattern (other scripts - direct instantiation):**
 
 The following scripts still use the legacy pattern with direct model instantiation:
-- `04_supervisor/supervisor.py`
 - `05_network/network.py`
 
 To switch providers in legacy scripts:
