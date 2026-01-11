@@ -28,22 +28,22 @@ import sys
 from typing import Annotated, Literal, Optional
 
 # IMPORTANT: Use pysqlite3 instead of built-in sqlite3
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__("pysqlite3")
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
-import sqlite_vss
-from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_community.vectorstores import SQLiteVSS
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
+import os
 from pydantic import BaseModel, Field, ConfigDict
+import sqlite_vss
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from utils import get_available_model
+from utils import get_llm, get_embeddings, load_env_file
 
 
 # ========================================
@@ -58,19 +58,19 @@ class NetworkState(BaseModel):
     - next_agent: Which agent should execute next
     - handoff_reason: Why the handoff occurred (for transparency)
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     messages: Annotated[list, add_messages] = Field(
         default_factory=list,
-        description="Conversation history including all agent interactions and handoffs"
+        description="Conversation history including all agent interactions and handoffs",
     )
     next_agent: str = Field(
         default="researcher",
-        description="The next agent to execute (researcher, writer, fact_checker, or FINISH)"
+        description="The next agent to execute (researcher, writer, fact_checker, or FINISH)",
     )
     handoff_reason: str = Field(
-        default="",
-        description="Reason for the current handoff"
+        default="", description="Reason for the current handoff"
     )
 
 
@@ -87,21 +87,22 @@ vectorstore = None
 class HandoffDecision(BaseModel):
     """
     Structured decision for agent handoffs using with_structured_output.
-    
+
     This ensures agents make clean decisions: either handoff OR provide final answer.
     No mixing of formats or unclear responses.
     """
+
     handoff_to: Optional[Literal["researcher", "writer", "fact_checker"]] = Field(
         default=None,
-        description="Which agent to handoff to, or None if providing final answer"
+        description="Which agent to handoff to, or None if providing final answer",
     )
     reason: Optional[str] = Field(
         default=None,
-        description="Why you're handing off to this agent (required if handoff_to is set)"
+        description="Why you're handing off to this agent (required if handoff_to is set)",
     )
     final_answer: Optional[str] = Field(
         default=None,
-        description="The final answer to provide to the user (set this if NOT handing off)"
+        description="The final answer to provide to the user (set this if NOT handing off)",
     )
 
 
@@ -191,9 +192,11 @@ def researcher_agent(state: NetworkState) -> dict:
 
     # Check if this is a handoff scenario
     last_message = state.messages[-1] if state.messages else None
-    is_handoff = (isinstance(last_message, AIMessage) and
-                  last_message.tool_calls and
-                  any('transfer_to_researcher' in str(tc) for tc in last_message.tool_calls))
+    is_handoff = (
+        isinstance(last_message, AIMessage)
+        and last_message.tool_calls
+        and any("transfer_to_researcher" in str(tc) for tc in last_message.tool_calls)
+    )
 
     if is_handoff:
         print(f"   ℹ️  Received handoff: {state.handoff_reason}")
@@ -207,8 +210,10 @@ def researcher_agent(state: NetworkState) -> dict:
 
     if not user_question:
         return {
-            "messages": [AIMessage(content="[Researcher] No question found to research.")],
-            "next_agent": "FINISH"
+            "messages": [
+                AIMessage(content="[Researcher] No question found to research.")
+            ],
+            "next_agent": "FINISH",
         }
 
     # Setup database connection
@@ -217,14 +222,16 @@ def researcher_agent(state: NetworkState) -> dict:
 
     if not db_path.exists():
         return {
-            "messages": [AIMessage(
-                content="[Researcher] Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
-            )],
-            "next_agent": "FINISH"
+            "messages": [
+                AIMessage(
+                    content="[Researcher] Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
+                )
+            ],
+            "next_agent": "FINISH",
         }
 
     # Initialize embeddings and load vector store
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    embeddings = get_embeddings()
     connection = sqlite3.connect(str(db_path), check_same_thread=False)
     connection.enable_load_extension(True)
     connection.row_factory = sqlite3.Row
@@ -284,10 +291,9 @@ User Question: {user_question}
 Based on the research above, make your decision: provide a final answer or handoff to another agent."""
 
     # Make decision using structured output
-    decision: HandoffDecision = llm_with_structure.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=decision_prompt)
-    ])
+    decision: HandoffDecision = llm_with_structure.invoke(
+        [SystemMessage(content=system_prompt), HumanMessage(content=decision_prompt)]
+    )
 
     # Process the structured decision
     if decision.final_answer:
@@ -295,37 +301,39 @@ Based on the research above, make your decision: provide a final answer or hando
         print("   ✓ Researcher providing direct response")
         return {
             "messages": [AIMessage(content=f"[Researcher] {decision.final_answer}")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
     elif decision.handoff_to and decision.reason:
         # Researcher wants to handoff
         print(f"   → Researcher initiating handoff to: {decision.handoff_to}")
         print(f"   → Reason: {decision.reason}")
-        
+
         # Create the appropriate tool call based on decision
         tool_map = {
             "writer": transfer_to_writer,
-            "fact_checker": transfer_to_fact_checker
+            "fact_checker": transfer_to_fact_checker,
         }
-        
+
         tool_to_call = tool_map.get(decision.handoff_to)
         if not tool_to_call:
             # Fallback to final answer if invalid handoff
             return {
                 "messages": [AIMessage(content=f"[Researcher] {research_findings}")],
-                "next_agent": "FINISH"
+                "next_agent": "FINISH",
             }
-        
+
         # Manually create the tool call structure
         tool_call_msg = AIMessage(
             content=f"[Researcher] {research_findings}",
-            tool_calls=[{
-                "name": f"transfer_to_{decision.handoff_to}",
-                "args": {"reason": decision.reason},
-                "id": f"call_{decision.handoff_to}"
-            }]
+            tool_calls=[
+                {
+                    "name": f"transfer_to_{decision.handoff_to}",
+                    "args": {"reason": decision.reason},
+                    "id": f"call_{decision.handoff_to}",
+                }
+            ],
         )
-        
+
         return {
             "messages": [tool_call_msg],
         }
@@ -334,7 +342,7 @@ Based on the research above, make your decision: provide a final answer or hando
         print("   ⚠️  Invalid decision structure, providing research findings")
         return {
             "messages": [AIMessage(content=f"[Researcher] {research_findings}")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
 
 
@@ -361,9 +369,11 @@ def writer_agent(state: NetworkState) -> dict:
 
     # Check if this is a handoff scenario
     last_message = state.messages[-1] if state.messages else None
-    is_handoff = (isinstance(last_message, AIMessage) and
-                  last_message.tool_calls and
-                  any('transfer_to_writer' in str(tc) for tc in last_message.tool_calls))
+    is_handoff = (
+        isinstance(last_message, AIMessage)
+        and last_message.tool_calls
+        and any("transfer_to_writer" in str(tc) for tc in last_message.tool_calls)
+    )
 
     if is_handoff:
         print(f"   ℹ️  Received handoff: {state.handoff_reason}")
@@ -390,10 +400,12 @@ def writer_agent(state: NetworkState) -> dict:
     if not user_question:
         return {
             "messages": [AIMessage(content="[Writer] No question to write about.")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
 
-    research_context = "\n\n".join(context) if context else "No additional context provided."
+    research_context = (
+        "\n\n".join(context) if context else "No additional context provided."
+    )
 
     # Use structured output for clean decision-making
     llm_with_structure = llm.with_structured_output(HandoffDecision)
@@ -428,10 +440,9 @@ Available Context:
 
 Based on the context above, make your decision: provide a final answer or handoff to another agent."""
 
-    decision: HandoffDecision = llm_with_structure.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_prompt)
-    ])
+    decision: HandoffDecision = llm_with_structure.invoke(
+        [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    )
 
     # Process the structured decision
     if decision.final_answer:
@@ -439,41 +450,47 @@ Based on the context above, make your decision: provide a final answer or handof
         print("   ✓ Writer providing final response")
         return {
             "messages": [AIMessage(content=f"[Writer] {decision.final_answer}")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
     elif decision.handoff_to and decision.reason:
         # Writer wants to handoff
         print(f"   → Writer initiating handoff to: {decision.handoff_to}")
         print(f"   → Reason: {decision.reason}")
-        
+
         # Create the appropriate tool call based on decision
         tool_map = {
             "researcher": transfer_to_researcher,
-            "fact_checker": transfer_to_fact_checker
+            "fact_checker": transfer_to_fact_checker,
         }
-        
+
         tool_to_call = tool_map.get(decision.handoff_to)
         if not tool_to_call:
             # Fallback to final answer if invalid handoff
             return {
-                "messages": [AIMessage(content="[Writer] Invalid handoff target. Completing task.")],
-                "next_agent": "FINISH"
+                "messages": [
+                    AIMessage(
+                        content="[Writer] Invalid handoff target. Completing task."
+                    )
+                ],
+                "next_agent": "FINISH",
             }
-        
+
         # Create tool call message
         tools = [transfer_to_researcher, transfer_to_fact_checker]
         tool_node = ToolNode(tools)
-        
+
         # Manually create the tool call structure
         tool_call_msg = AIMessage(
             content="",
-            tool_calls=[{
-                "name": f"transfer_to_{decision.handoff_to}",
-                "args": {"reason": decision.reason},
-                "id": f"call_{decision.handoff_to}"
-            }]
+            tool_calls=[
+                {
+                    "name": f"transfer_to_{decision.handoff_to}",
+                    "args": {"reason": decision.reason},
+                    "id": f"call_{decision.handoff_to}",
+                }
+            ],
         )
-        
+
         return {
             "messages": [tool_call_msg],
         }
@@ -481,8 +498,10 @@ Based on the context above, make your decision: provide a final answer or handof
         # Invalid decision - provide default response
         print("   ⚠️  Invalid decision structure, providing default response")
         return {
-            "messages": [AIMessage(content="[Writer] Unable to process request properly.")],
-            "next_agent": "FINISH"
+            "messages": [
+                AIMessage(content="[Writer] Unable to process request properly.")
+            ],
+            "next_agent": "FINISH",
         }
 
 
@@ -512,9 +531,11 @@ def fact_checker_agent(state: NetworkState) -> dict:
 
     # Check if this is a handoff scenario
     last_message = state.messages[-1] if state.messages else None
-    is_handoff = (isinstance(last_message, AIMessage) and
-                  last_message.tool_calls and
-                  any('transfer_to_fact_checker' in str(tc) for tc in last_message.tool_calls))
+    is_handoff = (
+        isinstance(last_message, AIMessage)
+        and last_message.tool_calls
+        and any("transfer_to_fact_checker" in str(tc) for tc in last_message.tool_calls)
+    )
 
     if is_handoff:
         print(f"   ℹ️  Received handoff: {state.handoff_reason}")
@@ -528,7 +549,9 @@ def fact_checker_agent(state: NetworkState) -> dict:
             user_question = msg.content
         elif isinstance(msg, AIMessage):
             # Include messages with content, regardless of whether they have tool calls
-            if msg.content and ("[Researcher]" in msg.content or "[Writer]" in msg.content):
+            if msg.content and (
+                "[Researcher]" in msg.content or "[Writer]" in msg.content
+            ):
                 content_to_check.append(msg.content)
 
     if not content_to_check:
@@ -581,10 +604,9 @@ Content Checked:
 
 Based on the verification above, make your decision: approve with final answer or request changes via handoff."""
 
-    decision: HandoffDecision = llm_with_structure.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=decision_prompt)
-    ])
+    decision: HandoffDecision = llm_with_structure.invoke(
+        [SystemMessage(content=system_prompt), HumanMessage(content=decision_prompt)]
+    )
 
     # Process the structured decision
     if decision.final_answer:
@@ -592,37 +614,38 @@ Based on the verification above, make your decision: approve with final answer o
         print("   ✓ Fact Checker approving final answer")
         return {
             "messages": [AIMessage(content=f"[Fact Checker] {decision.final_answer}")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
     elif decision.handoff_to and decision.reason:
         # Fact checker wants to handoff
         print(f"   → Fact Checker initiating handoff to: {decision.handoff_to}")
         print(f"   → Reason: {decision.reason}")
-        
+
         # Create the appropriate tool call based on decision
-        tool_map = {
-            "researcher": transfer_to_researcher,
-            "writer": transfer_to_writer
-        }
-        
+        tool_map = {"researcher": transfer_to_researcher, "writer": transfer_to_writer}
+
         tool_to_call = tool_map.get(decision.handoff_to)
         if not tool_to_call:
             # Fallback to final answer if invalid handoff
             return {
-                "messages": [AIMessage(content=f"[Fact Checker] {verification_result}")],
-                "next_agent": "FINISH"
+                "messages": [
+                    AIMessage(content=f"[Fact Checker] {verification_result}")
+                ],
+                "next_agent": "FINISH",
             }
-        
+
         # Manually create the tool call structure
         tool_call_msg = AIMessage(
             content=f"[Fact Checker] {verification_result}",
-            tool_calls=[{
-                "name": f"transfer_to_{decision.handoff_to}",
-                "args": {"reason": decision.reason},
-                "id": f"call_{decision.handoff_to}"
-            }]
+            tool_calls=[
+                {
+                    "name": f"transfer_to_{decision.handoff_to}",
+                    "args": {"reason": decision.reason},
+                    "id": f"call_{decision.handoff_to}",
+                }
+            ],
         )
-        
+
         return {
             "messages": [tool_call_msg],
         }
@@ -631,7 +654,7 @@ Based on the verification above, make your decision: approve with final answer o
         print("   ⚠️  Invalid decision structure, approving content")
         return {
             "messages": [AIMessage(content=f"[Fact Checker] {verification_result}")],
-            "next_agent": "FINISH"
+            "next_agent": "FINISH",
         }
 
 
@@ -659,22 +682,22 @@ def handle_tool_calls(state: NetworkState) -> dict:
         return {"next_agent": "FINISH"}
 
     tool_call = last_message.tool_calls[0]
-    tool_name = tool_call['name']
+    tool_name = tool_call["name"]
 
     # Extract handoff reason
-    reason = tool_call['args'].get('reason', 'No reason provided')
+    reason = tool_call["args"].get("reason", "No reason provided")
 
     print(f"\n🔄 Processing handoff: {tool_name}")
     print(f"   Reason: {reason}")
 
     # Determine next agent based on tool
     next_agent_map = {
-        'transfer_to_researcher': 'researcher',
-        'transfer_to_writer': 'writer',
-        'transfer_to_fact_checker': 'fact_checker',
+        "transfer_to_researcher": "researcher",
+        "transfer_to_writer": "writer",
+        "transfer_to_fact_checker": "fact_checker",
     }
 
-    next_agent = next_agent_map.get(tool_name, 'FINISH')
+    next_agent = next_agent_map.get(tool_name, "FINISH")
 
     # Create tool node to execute the handoff
     tools = [transfer_to_researcher, transfer_to_writer, transfer_to_fact_checker]
@@ -684,16 +707,18 @@ def handle_tool_calls(state: NetworkState) -> dict:
     tool_result = tool_node.invoke(state)
 
     return {
-        "messages": tool_result['messages'],
+        "messages": tool_result["messages"],
         "next_agent": next_agent,
-        "handoff_reason": reason
+        "handoff_reason": reason,
     }
 
 
 # ========================================
 # STEP 6: Routing Function
 # ========================================
-def route_after_agent(state: NetworkState) -> Literal["tools", "researcher", "writer", "fact_checker", "end"]:
+def route_after_agent(
+    state: NetworkState,
+) -> Literal["tools", "researcher", "writer", "fact_checker", "end"]:
     """
     Conditional edge function that routes based on agent decisions.
 
@@ -770,7 +795,7 @@ def create_network_graph():
                 "writer": "writer",
                 "fact_checker": "fact_checker",
                 "end": END,
-            }
+            },
         )
 
     # Route from tools back to agents based on handoff
@@ -782,7 +807,7 @@ def create_network_graph():
             "writer": "writer",
             "fact_checker": "fact_checker",
             "end": END,
-        }
+        },
     )
 
     return workflow.compile()
@@ -794,41 +819,55 @@ def create_network_graph():
 def main():
     global llm
 
+    # Load environment variables
+    load_env_file(__file__)
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Network Multi-Agent System")
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Run in interactive mode (ask multiple questions)"
+        help="Run in interactive mode (ask multiple questions)",
     )
     parser.add_argument(
         "--question",
         type=str,
         default="Who is the CEO of ACME Corp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')",
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3 thinking model for agent decisions"
+        help="Use thinking model for agent decisions (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)",
     )
     args = parser.parse_args()
+
+    # Get provider information for display
+    provider = os.getenv("LLM_PROVIDER", "ollama").lower()
 
     print("=" * 60)
     print("Step 5: Network/Swarm Multi-Agent System")
     if args.thinking:
-        print("(Using Thinking Model: qwen3)")
+        if provider == "google":
+            thinking_model = os.getenv(
+                "GOOGLE_THINKING_MODEL", "gemini-3-flash-preview"
+            )
+            print(f"(Using Thinking Model: {thinking_model} via Google AI Studio)")
+        else:
+            thinking_model = os.getenv("OLLAMA_THINKING_MODEL", "qwen3")
+            print(f"(Using Thinking Model: {thinking_model} via Ollama)")
+    else:
+        if provider == "google":
+            model = os.getenv("GOOGLE_MODEL", "gemini-3-flash-preview")
+            print(f"(Using Model: {model} via Google AI Studio)")
+        else:
+            print("(Using Model via Ollama)")
     print("=" * 60)
     print()
 
-    # Initialize LLM
-    model_name = get_available_model(prefer_thinking=args.thinking)
-    print(f"🔗 Initializing LLM ({model_name})...")
-    llm = ChatOllama(
-        model=model_name,
-        temperature=0,
-        reasoning=True if args.thinking else False,
-    )
+    # Initialize LLM using factory function
+    print(f"🔗 Initializing LLM ({provider} provider)...")
+    llm = get_llm(prefer_thinking=args.thinking, temperature=0)
     print("✓ LLM initialized")
     print()
 
@@ -839,9 +878,15 @@ def main():
     print()
 
     print("Available agents (peer-to-peer network):")
-    print("  1. 🔍 Researcher - Queries knowledge base, can handoff to Writer or Fact Checker")
-    print("  2. ✍️  Writer - Generates content, can handoff to Researcher or Fact Checker")
-    print("  3. ✅ Fact Checker - Verifies accuracy, can handoff to Researcher or Writer")
+    print(
+        "  1. 🔍 Researcher - Queries knowledge base, can handoff to Writer or Fact Checker"
+    )
+    print(
+        "  2. ✍️  Writer - Generates content, can handoff to Researcher or Fact Checker"
+    )
+    print(
+        "  3. ✅ Fact Checker - Verifies accuracy, can handoff to Researcher or Writer"
+    )
     print()
     print("Each agent decides independently when to involve others!")
     print()
@@ -855,8 +900,7 @@ def main():
 
         # Create initial state
         initial_state = NetworkState(
-            messages=[HumanMessage(content=question)],
-            next_agent="researcher"
+            messages=[HumanMessage(content=question)], next_agent="researcher"
         )
 
         # Execute the graph

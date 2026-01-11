@@ -134,6 +134,7 @@ This pattern appears in all RAG-related scripts and must be placed BEFORE any sq
 - **Structured decisions**: `llm.with_structured_output(HandoffDecision)` ensures clean handoff vs final_answer choices
 - **Flow**: Any agent → tools (handoff) → any other agent (dynamic, emergent)
 - **Key difference**: No supervisor, agents autonomously decide when/where to handoff
+- **LLM/Embeddings**: Uses `get_llm()` and `get_embeddings()` factories for provider-agnostic model selection
 
 ### LangGraph State Management
 
@@ -179,28 +180,15 @@ GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: specify thinking model
 - `02_rag_lcel/query.py` - Uses `get_llm()` and `get_embeddings()`
 - `03_langgraph_react/agent.py` - Uses `get_llm()` and `get_embeddings()`
 - `04_supervisor/supervisor.py` - Uses `get_llm()` and `get_embeddings()`
+- `05_network/network.py` - Uses `get_llm()` and `get_embeddings()`
 
-**Important for RAG scripts and agent:** When switching providers (Ollama ↔ Google):
+**Important for RAG scripts and multi-agent systems:** When switching providers (Ollama ↔ Google):
 1. Update `.env` with new `LLM_PROVIDER`
 2. **Must re-run `ingest.py`** to rebuild vector database with matching embeddings
 3. Different providers use different embeddings models with incompatible vector spaces
-4. The agent's `lookup_policy` tool uses the same embeddings model as the knowledge base
+4. The agent tools (`lookup_policy` in ReAct, Researcher in Supervisor/Network) use the same embeddings model as the knowledge base
 
-**Legacy Pattern (other scripts - direct instantiation):**
-
-The following scripts still use the legacy pattern with direct model instantiation:
-- `05_network/network.py`
-
-To switch providers in legacy scripts:
-
-1. Import `load_dotenv()` and call it
-2. Change `get_available_model()` to use `use_cloud=True`
-3. Replace `ChatOllama` with `ChatGoogleGenerativeAI`
-4. For embeddings: Replace `OllamaEmbeddings` with `GoogleGenerativeAIEmbeddings`
-
-Requires `.env` file with `GOOGLE_API_KEY`.
-
-**Note:** The workshop is transitioning all scripts to use the factory pattern for cleaner provider abstraction.
+**Note:** All scripts in the workshop now use the factory pattern for clean provider abstraction.
 
 ### Thinking Model Support
 

@@ -30,8 +30,8 @@ from typing import Annotated
 
 # IMPORTANT: Use pysqlite3 instead of built-in sqlite3
 # pysqlite3 supports the VSS (Vector Similarity Search) extension
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__("pysqlite3")
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 import sqlite_vss
 from langchain_community.vectorstores import SQLiteVSS
@@ -66,6 +66,7 @@ class AgentState(BaseModel):
     The 'messages' field tracks the entire conversation history,
     including user queries, agent responses, tool calls, and tool outputs.
     """
+
     # arbitrary_types_allowed = True
     # ==============================
     # This Pydantic configuration setting allows the model to accept fields with types
@@ -115,8 +116,7 @@ class AgentState(BaseModel):
     # WITHOUT add_messages, the result would be:
     #   Result: messages = [AIMessage("Hello!")]  ← REPLACED the entire list!
     messages: Annotated[list, add_messages] = Field(
-        default_factory=list,
-        description="List of messages in the conversation"
+        default_factory=list, description="List of messages in the conversation"
     )
 
 
@@ -146,7 +146,9 @@ def lookup_policy(query: str) -> str:
     db_path = script_dir.parent / "acme.db"
 
     if not db_path.exists():
-        return "Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
+        return (
+            "Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
+        )
 
     # Initialize embeddings (must match ingestion)
     # Use the factory function to get the correct embeddings model
@@ -307,7 +309,7 @@ def should_continue(state: AgentState) -> str:
     last_message = messages[-1]
 
     # Check if the agent wants to use tools
-    if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
         return "tools"
 
     # No tools needed, agent is done
@@ -353,8 +355,8 @@ def create_graph():
         should_continue,
         {
             "tools": "tools",  # If tools needed, go to tools node
-            "end": END,        # If done, end the graph
-        }
+            "end": END,  # If done, end the graph
+        },
     )
 
     # Add edge from tools back to agent
@@ -376,18 +378,18 @@ def main():
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Run in interactive mode (ask multiple questions)"
+        help="Run in interactive mode (ask multiple questions)",
     )
     parser.add_argument(
         "--question",
         type=str,
         default="Who is the CEO of ACME Corp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')",
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3 thinking model to show reasoning process"
+        help="Use qwen3 thinking model to show reasoning process",
     )
     args = parser.parse_args()
 
@@ -455,11 +457,11 @@ def main():
                 print(f"Node: {key}")
                 if "messages" in value:
                     for msg in value["messages"]:
-                        if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                        if hasattr(msg, "tool_calls") and msg.tool_calls:
                             print(f"  Tool Calls: {len(msg.tool_calls)}")
                             for tc in msg.tool_calls:
                                 print(f"    - {tc['name']}({tc['args']})")
-                        elif hasattr(msg, 'content'):
+                        elif hasattr(msg, "content"):
                             content_preview = str(msg.content)[:100].replace("\n", " ")
                             print(f"  Content: {content_preview}...")
             print()
@@ -478,13 +480,13 @@ def main():
         # This handles both Ollama and Google models properly
         # Always use extract_reasoning_and_answer to handle different response formats
         reasoning, final_answer = extract_reasoning_and_answer(final_message)
-        
+
         if args.thinking and reasoning:
             print()
             print("### Thinking Trace ###")
             print(reasoning)
-            print("\n" + "="*60 + "\n")
-        
+            print("\n" + "=" * 60 + "\n")
+
         print(final_answer)
         print()
 

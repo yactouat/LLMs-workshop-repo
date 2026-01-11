@@ -22,13 +22,14 @@ from utils import get_llm, load_env_file, extract_reasoning_and_answer
 # Load environment variables from .env file if it exists
 load_env_file(__file__)
 
+
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Local LLM Hello World Demo")
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use thinking model to show reasoning process (qwen3 for Ollama, or model specified by GOOGLE_THINKING_MODEL for Google)"
+        help="Use thinking model to show reasoning process (qwen3 for Ollama, or model specified by GOOGLE_THINKING_MODEL for Google)",
     )
     args = parser.parse_args()
 
@@ -71,19 +72,19 @@ def main():
         if reasoning:
             print("### Thinking Trace ###")
             print(reasoning)
-            print("\n" + "="*60 + "\n")
+            print("\n" + "=" * 60 + "\n")
         else:
             print("No reasoning trace found (Model might not have generated one).")
             print()
 
         # The Final Answer
         print("### Final Answer ###")
-    
+
     # Extract text content - handle both list format (Google) and string format (Ollama)
     print(final_answer)
-    
+
     print("-" * 60)
-    
+
     print()
 
     print("Observation:")
@@ -94,11 +95,15 @@ def main():
         print()
         print("Thinking Model Note:")
         if provider == "ollama":
-            print("The qwen3 model is a thinking model that exposes its reasoning process.")
+            print(
+                "The qwen3 model is a thinking model that exposes its reasoning process."
+            )
         else:
             print("Thinking models expose their reasoning process.")
         print("With reasoning=True, LangChain parses '<think>' blocks and moves them")
-        print("to response.additional_kwargs['reasoning_content']. This helps understand")
+        print(
+            "to response.additional_kwargs['reasoning_content']. This helps understand"
+        )
         print("how the model arrives at its conclusions.")
         print()
         print("Try comparing with the non-thinking model:")

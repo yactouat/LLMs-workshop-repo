@@ -168,32 +168,29 @@ python3 02_rag_lcel/ingest.py
 python3 04_supervisor/supervisor.py
 ```
 
-### For Other Scripts (Legacy Pattern)
+### For Network Multi-Agent System (05_network)
 
-The following scripts still use the legacy pattern and require manual code changes:
-- `05_network/network.py`
+The `network.py` script uses the `LLM_PROVIDER` environment variable to automatically select both LLM and embeddings models:
 
-To use cloud models with these scripts:
+1. **Set up your provider** using the same `.env` configuration as above
+2. **Important:** When switching providers (Ollama ↔ Google), you **must re-run** `02_rag_lcel/ingest.py` to rebuild the vector database with the matching embeddings model
+   - The Researcher agent uses the same embeddings model as the knowledge base
+   - Different providers use different embeddings models with incompatible vector spaces
 
-1. **Set up your API key** (see Prerequisites above)
-2. **Modify the script** to use cloud models:
-   - Uncomment the line with `use_cloud=True` in the `get_available_model()` call
-   - Comment out the `ChatOllama` initialization
-   - Uncomment the `ChatGoogleGenerativeAI` initialization
-   - Uncomment the `load_dotenv()` import if needed
+Example workflow when switching to Google:
+```bash
+# 1. Configure provider in .env
+echo "LLM_PROVIDER=google" >> .env
+echo "GOOGLE_API_KEY=your_key" >> .env
 
-Example pattern in legacy scripts:
-```python
-# Change from:
-model_name = get_available_model(prefer_thinking=args.thinking)
-llm = ChatOllama(model=model_name, ...)
+# 2. Re-ingest knowledge base with Google embeddings (required!)
+python3 02_rag_lcel/ingest.py
 
-# To:
-model_name = get_available_model(prefer_thinking=args.thinking, use_cloud=True)
-llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
+# 3. Run network system using Google models
+python3 05_network/network.py
 ```
 
-**Note:** The workshop is transitioning all scripts to the environment variable pattern used in `hello_world.py`, the RAG scripts, `agent.py`, and `supervisor.py` for easier provider switching.
+**Note:** All scripts in this workshop now use the modern factory pattern for consistent provider abstraction.
 
 ## Runnable Scripts
 
@@ -245,7 +242,7 @@ python3 05_network/network.py [--interactive] [--question "YOUR_QUESTION"] [--th
 ```
 - `--interactive`: Run in interactive mode (ask multiple questions)
 - `--question "YOUR_QUESTION"`: Question to ask (default: "Who is the CEO of ACME Corp?")
-- `--thinking`: Use qwen3 thinking model for agent decisions
+- `--thinking`: Use thinking model for agent decisions (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
 

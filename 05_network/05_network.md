@@ -572,6 +572,25 @@ Make sure you've run the ingestion script first:
 python3 02_rag_lcel/ingest.py
 ```
 
+### Provider Support
+
+This script supports both **local Ollama models** and **cloud models via Google AI Studio**.
+
+**To use Google AI Studio:**
+1. Create a `.env` file in the repository root:
+   ```
+   LLM_PROVIDER=google
+   GOOGLE_API_KEY=your_api_key_here
+   GOOGLE_MODEL=gemini-3-flash-preview
+   GOOGLE_THINKING_MODEL=gemini-3-flash-preview  # Optional: for --thinking flag
+   ```
+2. **Important:** Re-run `python3 02_rag_lcel/ingest.py` to rebuild the vector database with Google embeddings
+3. The script will automatically use Google models - no code changes needed
+
+**To use Ollama (default):**
+- Either don't create a `.env` file, or set `LLM_PROVIDER=ollama`
+- Ensure Ollama is running and models are pulled
+
 ### Basic Mode (Default Model)
 ```bash
 python3 05_network/network.py
@@ -588,9 +607,18 @@ python3 05_network/network.py --question "What is ACME Corp's vacation policy?"
 ```
 
 ### Thinking Model Mode
-Use `qwen3` to see agent reasoning processes:
+Use thinking models to see agent reasoning processes:
+
+**With Ollama:**
 ```bash
+# Uses `qwen3` or model specified by `GOOGLE_THINKING_MODEL` or `OLLAMA_THINKING_MODEL` env vars
 python3 05_network/network.py --thinking
+```
+
+**With Google:**
+```bash
+# Uses model specified by `GOOGLE_THINKING_MODEL` env var (e.g., gemini-3-flash-preview)
+LLM_PROVIDER=google python3 05_network/network.py --thinking
 ```
 
 Or combine flags:

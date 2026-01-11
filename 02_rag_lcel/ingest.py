@@ -87,7 +87,7 @@ def main():
     #
     # This ensures embeddings match your LLM provider for consistent behavior
     print("🔗 Initializing embeddings for semantic chunking...")
-    
+
     # Determine which model will be used based on provider
     provider = os.getenv("LLM_PROVIDER", "ollama").lower()
     if provider == "ollama":
@@ -96,10 +96,10 @@ def main():
         model_name = "gemini-embedding-001"
     else:
         model_name = "unknown"
-    
+
     print(f"   Provider: {provider}")
     print(f"   Model: {model_name}")
-    
+
     embeddings = get_embeddings()
     print("✓ Embedding model initialized")
     print()
@@ -130,7 +130,7 @@ def main():
     )
     chunks = text_splitter.split_documents(documents)
     print(f"✓ Created {len(chunks)} chunks")
-    
+
     # Filter out empty chunks (chunks with empty or whitespace-only content)
     # Some chunkers can create empty chunks, which cause embedding APIs to fail
     original_count = len(chunks)

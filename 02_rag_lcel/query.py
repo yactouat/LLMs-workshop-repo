@@ -27,8 +27,8 @@ import sys
 # IMPORTANT: Use pysqlite3 instead of built-in sqlite3
 # pysqlite3 supports the VSS (Vector Similarity Search) extension
 # which is required for querying vector embeddings
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__("pysqlite3")
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 # Add parent directory to path to import utils
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -69,18 +69,18 @@ def main():
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Run in interactive mode (ask multiple questions)"
+        help="Run in interactive mode (ask multiple questions)",
     )
     parser.add_argument(
         "--question",
         type=str,
         default="Who is the CEO of ACME Corp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')",
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3 thinking model to show reasoning process"
+        help="Use qwen3 thinking model to show reasoning process",
     )
     args = parser.parse_args()
 
@@ -120,20 +120,24 @@ def main():
     # Connect to the SQLite database and load the VSS extension
     # for vector similarity search
     import sqlite3
-    connection = sqlite3.connect(str(db_path), check_same_thread=False)  # Allow multi-threading
-    connection.enable_load_extension(True)                                # Enable extensions
+
+    connection = sqlite3.connect(
+        str(db_path), check_same_thread=False
+    )  # Allow multi-threading
+    connection.enable_load_extension(True)  # Enable extensions
     # row_factory determines how rows are returned from queries - sqlite3.Row allows
     # accessing columns by name (row['column']) instead of just by index (row[0])
     connection.row_factory = sqlite3.Row
     import sqlite_vss
-    sqlite_vss.load(connection)                                           # Load VSS extension
-    connection.enable_load_extension(False)                               # Disable for security
+
+    sqlite_vss.load(connection)  # Load VSS extension
+    connection.enable_load_extension(False)  # Disable for security
 
     # Create the vector store interface
     vectorstore = SQLiteVSS(
-        table="techsummit_knowledge",     # Same table name from ingestion
-        embedding=embeddings,          # Same embedding model from ingestion
-        connection=connection,         # SQLite connection with VSS loaded
+        table="techsummit_knowledge",  # Same table name from ingestion
+        embedding=embeddings,  # Same embedding model from ingestion
+        connection=connection,  # SQLite connection with VSS loaded
     )
     print("✓ Vector store loaded")
     print()
@@ -150,7 +154,7 @@ def main():
     llm = get_llm(
         prefer_thinking=args.thinking,
         temperature=0,  # 0 = deterministic, 1 = creative
-                        # For factual Q&A, we want deterministic responses
+        # For factual Q&A, we want deterministic responses
     )
     print("✓ LLM initialized")
     print()
@@ -209,7 +213,7 @@ Answer:"""
     # - Returning the corresponding documents
     retriever = vectorstore.as_retriever(
         search_kwargs={"k": 5}  # Retrieve top 5 most similar chunks
-                                 # Increased from 3 to ensure CEO info is included
+        # Increased from 3 to ensure CEO info is included
     )
 
     # Build the LCEL chain using the pipe operator (|)
@@ -224,11 +228,11 @@ Answer:"""
     chain = (
         {
             "context": retriever | format_docs,  # Retrieve docs and format them
-            "question": RunnablePassthrough()     # Pass question through unchanged
+            "question": RunnablePassthrough(),  # Pass question through unchanged
         }
-        | prompt                                  # Fill prompt template with context & question
-        | llm                                     # Send formatted prompt to LLM
-        | StrOutputParser()                       # Parse LLM output to plain string
+        | prompt  # Fill prompt template with context & question
+        | llm  # Send formatted prompt to LLM
+        | StrOutputParser()  # Parse LLM output to plain string
     )
 
     print("✓ LCEL chain built successfully")
@@ -283,10 +287,7 @@ Answer:"""
         if args.thinking:
             # Build a chain without the output parser to get full response
             chain_with_reasoning = (
-                {
-                    "context": retriever | format_docs,
-                    "question": RunnablePassthrough()
-                }
+                {"context": retriever | format_docs, "question": RunnablePassthrough()}
                 | prompt
                 | llm
             )
@@ -299,7 +300,7 @@ Answer:"""
             if reasoning:
                 print("### Thinking Trace ###")
                 print(reasoning)
-                print("\n" + "="*60 + "\n")
+                print("\n" + "=" * 60 + "\n")
             else:
                 print("No reasoning trace found (Model might not have generated one).")
                 print()

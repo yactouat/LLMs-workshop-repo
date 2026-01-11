@@ -28,8 +28,8 @@ import sys
 from typing import Annotated, Literal
 
 # IMPORTANT: Use pysqlite3 instead of built-in sqlite3
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__("pysqlite3")
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 import sqlite_vss
 from langchain_community.vectorstores import SQLiteVSS
@@ -57,15 +57,16 @@ class SupervisorState(BaseModel):
     - messages: Full conversation history
     - next_agent: Which agent should handle the next step
     """
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     messages: Annotated[list, add_messages] = Field(
         default_factory=list,
-        description="Conversation history including all agent interactions"
+        description="Conversation history including all agent interactions",
     )
     next_agent: str = Field(
         default="supervisor",
-        description="The next agent to execute (supervisor, researcher, writer, fact_checker, or FINISH)"
+        description="The next agent to execute (supervisor, researcher, writer, fact_checker, or FINISH)",
     )
 
 
@@ -105,8 +106,10 @@ def researcher_agent(state: SupervisorState) -> dict:
 
     if not user_question:
         return {
-            "messages": [AIMessage(content="[Researcher] No question found to research.")],
-            "next_agent": "supervisor"
+            "messages": [
+                AIMessage(content="[Researcher] No question found to research.")
+            ],
+            "next_agent": "supervisor",
         }
 
     # Setup database connection
@@ -115,10 +118,12 @@ def researcher_agent(state: SupervisorState) -> dict:
 
     if not db_path.exists():
         return {
-            "messages": [AIMessage(
-                content="[Researcher] Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
-            )],
-            "next_agent": "supervisor"
+            "messages": [
+                AIMessage(
+                    content="[Researcher] Error: Knowledge base not found. Please run 02_rag_lcel/ingest.py first."
+                )
+            ],
+            "next_agent": "supervisor",
         }
 
     # Initialize embeddings
@@ -143,16 +148,20 @@ def researcher_agent(state: SupervisorState) -> dict:
     results = vectorstore.similarity_search(user_question, k=3)
 
     if not results:
-        research_findings = "[Researcher] No relevant information found in the knowledge base."
+        research_findings = (
+            "[Researcher] No relevant information found in the knowledge base."
+        )
     else:
         context = "\n\n".join([doc.page_content for doc in results])
-        research_findings = f"[Researcher] I found the following information:\n\n{context}"
+        research_findings = (
+            f"[Researcher] I found the following information:\n\n{context}"
+        )
 
     print(f"   ✓ Retrieved {len(results)} relevant documents")
 
     return {
         "messages": [AIMessage(content=research_findings)],
-        "next_agent": "supervisor"
+        "next_agent": "supervisor",
     }
 
 
@@ -186,14 +195,16 @@ def writer_agent(state: SupervisorState) -> dict:
     if not user_question:
         return {
             "messages": [AIMessage(content="[Writer] No question to write about.")],
-            "next_agent": "supervisor"
+            "next_agent": "supervisor",
         }
 
     # Prepare messages for writer
     system_prompt = "You are a professional writer for ACME Corp. Based on the research provided, write a clear, concise answer to the user's question."
-    
-    research_context = chr(10).join(context) if context else "No research context provided."
-    
+
+    research_context = (
+        chr(10).join(context) if context else "No research context provided."
+    )
+
     user_prompt = f"""User Question: {user_question}
 
 Research Context:
@@ -204,15 +215,14 @@ Write a professional, helpful response:"""
     # Generate content using LLM
     # Use proper message format: system message + user message
     # This ensures both thinking and non-thinking models work correctly
-    response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_prompt)
-    ])
+    response = llm.invoke(
+        [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    )
 
     # Extract reasoning and answer using utility function
     # This handles both Ollama and Google models properly
     reasoning, final_answer = extract_reasoning_and_answer(response)
-    
+
     # Store reasoning in additional_kwargs if available, for later retrieval
     # Also include it in message content with a marker for supervisor to extract
     written_content = f"[Writer] {final_answer}"
@@ -223,8 +233,10 @@ Write a professional, helpful response:"""
     print("   ✓ Content generated")
 
     return {
-        "messages": [AIMessage(content=written_content, additional_kwargs=message_kwargs)],
-        "next_agent": "supervisor"
+        "messages": [
+            AIMessage(content=written_content, additional_kwargs=message_kwargs)
+        ],
+        "next_agent": "supervisor",
     }
 
 
@@ -283,7 +295,7 @@ databases, and automated fact-checking services."""
 
     return {
         "messages": [AIMessage(content=fact_check_result)],
-        "next_agent": "supervisor"
+        "next_agent": "supervisor",
     }
 
 
@@ -316,9 +328,21 @@ def supervisor_agent(state: SupervisorState) -> dict:
     print("\n👔 SUPERVISOR deciding next action...")
 
     # Analyze conversation state
-    has_researcher_output = any("[Researcher]" in msg.content for msg in state.messages if isinstance(msg, AIMessage))
-    has_writer_output = any("[Writer]" in msg.content for msg in state.messages if isinstance(msg, AIMessage))
-    has_fact_checker_output = any("[Fact Checker]" in msg.content for msg in state.messages if isinstance(msg, AIMessage))
+    has_researcher_output = any(
+        "[Researcher]" in msg.content
+        for msg in state.messages
+        if isinstance(msg, AIMessage)
+    )
+    has_writer_output = any(
+        "[Writer]" in msg.content
+        for msg in state.messages
+        if isinstance(msg, AIMessage)
+    )
+    has_fact_checker_output = any(
+        "[Fact Checker]" in msg.content
+        for msg in state.messages
+        if isinstance(msg, AIMessage)
+    )
 
     # Decision tree
     if not has_researcher_output:
@@ -364,15 +388,19 @@ def supervisor_agent(state: SupervisorState) -> dict:
             final_message_kwargs["reasoning_content"] = writer_reasoning
 
         return {
-            "messages": [AIMessage(content=final_answer, additional_kwargs=final_message_kwargs)],
-            "next_agent": "FINISH"
+            "messages": [
+                AIMessage(content=final_answer, additional_kwargs=final_message_kwargs)
+            ],
+            "next_agent": "FINISH",
         }
 
 
 # ========================================
 # STEP 5: Routing Function
 # ========================================
-def route_to_agent(state: SupervisorState) -> Literal["researcher", "writer", "fact_checker", "supervisor", "end"]:
+def route_to_agent(
+    state: SupervisorState,
+) -> Literal["researcher", "writer", "fact_checker", "supervisor", "end"]:
     """
     Conditional edge function that routes to the next agent.
 
@@ -440,7 +468,7 @@ def create_supervisor_graph():
             "fact_checker": "fact_checker",
             "supervisor": "supervisor",
             "end": END,
-        }
+        },
     )
 
     # Workers return to supervisor
@@ -462,18 +490,18 @@ def main():
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Run in interactive mode (ask multiple questions)"
+        help="Run in interactive mode (ask multiple questions)",
     )
     parser.add_argument(
         "--question",
         type=str,
         default="Who is the CEO of ACME Corp?",
-        help="Question to ask (default: 'Who is the CEO of ACME Corp?')"
+        help="Question to ask (default: 'Who is the CEO of ACME Corp?')",
     )
     parser.add_argument(
         "--thinking",
         action="store_true",
-        help="Use qwen3 thinking model for supervisor decisions"
+        help="Use qwen3 thinking model for supervisor decisions",
     )
     args = parser.parse_args()
 
@@ -517,8 +545,7 @@ def main():
 
         # Create initial state
         initial_state = SupervisorState(
-            messages=[HumanMessage(content=question)],
-            next_agent="supervisor"
+            messages=[HumanMessage(content=question)], next_agent="supervisor"
         )
 
         # Execute the graph
@@ -539,13 +566,13 @@ def main():
         print("\n" + "=" * 60)
         print("Final Answer:")
         print("=" * 60)
-        
+
         if args.thinking and reasoning:
             print()
             print("### Thinking Trace ###")
             print(reasoning)
-            print("\n" + "="*60 + "\n")
-        
+            print("\n" + "=" * 60 + "\n")
+
         print(final_answer)
         print()
 
