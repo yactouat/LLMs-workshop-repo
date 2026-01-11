@@ -243,7 +243,7 @@ def get_embeddings(**kwargs):
     if provider == "ollama":
         # Return configured OllamaEmbeddings instance
         # nomic-embed-text is optimized for text embedding tasks
-        # Produces high-quality 768-dimensional vectors
+        # Produces high-quality vectors
         return OllamaEmbeddings(
             model="nomic-embed-text",  # Specialized embedding model from Ollama
             **kwargs,

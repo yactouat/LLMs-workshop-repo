@@ -148,8 +148,8 @@ All multi-agent patterns use Pydantic models with:
 - **Storage**: SQLite with VSS extension at `acme.db` (repository root)
 - **Table**: `techsummit_knowledge`
 - **Embeddings**: Automatically selected via `get_embeddings()` based on `LLM_PROVIDER`:
-  - Ollama (default): `nomic-embed-text` (768 dimensions)
-  - Google: `gemini-embedding-001` (768 dimensions)
+  - Ollama (default): `nomic-embed-text`
+  - Google: `gemini-embedding-001`
 - **Chunking**: SemanticChunker with percentile-based splitting (breakpoint_threshold_amount=50)
 - **Retrieval**: `similarity_search()` with k=3 or k=5 depending on script
 - **Important**: Switching providers requires re-running `ingest.py` to rebuild vectors with matching embeddings model

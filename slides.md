@@ -16,33 +16,42 @@ Currently works @ Lamalo, a startup based in Strasbourg, which is building an en
 
 ## The Mission
 
-**Objective:** Build an intelligent system for "ACME Corp" totally offline.
+**Objective:** Build an intelligent system for "ACME Corp" with flexible deployment options.
 
-**Why Local?**
-- Privacy (sensitive company data never leaves your infrastructure)
-- Zero API Latency cost (no per-token pricing)
-- Data Sovereignty (complete control over your data)
+**Provider Options:**
+- **Local (Ollama):** Privacy-first, offline, zero API costs
+  - Runs on your hardware (8GB+ RAM recommended)
+  - Llama 3.1 / Qwen 3 models
+  - Complete data sovereignty
+- **Cloud (Google AI Studio):** Quick start, no local setup
+  - Uses Gemini 3 Flash Preview model
+  - Requires API key and internet connection
 
 **The Stack:**
-- **Engine:** Ollama (Llama 3.1 / Qwen 3)
+- **Engine:** Ollama (local) OR Google AI Studio (cloud) - configurable via LLM_PROVIDER
 - **Orchestration:** LangChain (The Skeleton) & LangGraph (The Brain)
 - **Memory:** SQLite (Vector Enabled with VSS extension)
 
 ---
 
-## Demo 1: Local LLM Hello World
+## Demo 1: LLM Hello World
 
 **Command:** `python3 01_local_llm/hello_world.py [--thinking]`
 
 **What You'll See:**
-- Direct interaction with a local LLM through Ollama
+- Direct interaction with an LLM (Ollama local OR Google cloud)
 - The model attempts to answer: "Who is the CEO of ACME Corp?"
 - The model cannot answer because ACME Corp isn't in its training data
+
+**Provider Selection:**
+- Default: Ollama (local)
+- Cloud option: Set `LLM_PROVIDER=google` in `.env` file with `GOOGLE_API_KEY`
 
 **What Are "Thinking" Models?**
 - Add `--thinking` flag to see the model's reasoning process
 - Model exposes internal chain-of-thought before answering
-- Useful for debugging and understanding how LLMs work
+- Ollama: Uses qwen3 (configured via OLLAMA_THINKING_MODEL)
+- Google: Uses gemini-3-flash-preview (configured via GOOGLE_THINKING_MODEL)
 
 **The Problem:**
 LLMs have a fixed knowledge cutoff. They cannot answer questions about private information or recent events.
@@ -58,8 +67,14 @@ LLMs have a fixed knowledge cutoff. They cannot answer questions about private i
 **What Happens:**
 1. **Load** knowledge base (company policies, CEO info, culture)
 2. **Chunk** the document semantically
-3. **Embed** each chunk into vectors
+3. **Embed** each chunk into vectors (provider-specific embeddings)
 4. **Store** vectors in SQLite with VSS extension
+
+**Embeddings by Provider:**
+- Ollama: nomic-embed-text
+- Google: gemini-embedding-001
+
+**Important:** Re-run `ingest.py` when switching providers - embeddings are not compatible!
 
 **Why RAG?**
 - LLMs struggle with large contexts (10k+ tokens)
@@ -97,15 +112,16 @@ chain = retriever | prompt | model | output_parser
 ```
 
 **How It Works:**
-1. Question → vector embedding
+1. Question → vector embedding (uses same provider as ingest.py)
 2. Retrieve top 5 similar chunks from SQLite
-3. Context + question → LLM
+3. Context + question → LLM (Ollama or Google)
 4. LLM generates answer
 
 **Why LCEL?**
 - Composable (mix components like LEGO)
 - Readable (clear data flow)
 - Optimized (automatic parallelization)
+- Provider-agnostic (works with both Ollama and Google)
 
 **Limitation:** Sequential (A → B → C). What if you need loops?
 
@@ -133,10 +149,13 @@ chain = retriever | prompt | model | output_parser
 - Agent **chooses** which tool to use
 - Can loop multiple times
 - Reasoning before acting
+- Works with both Ollama and Google models
 
 **Available Tools:**
-- `lookup_policy`: Query knowledge base (RAG)
+- `lookup_policy`: Query knowledge base (RAG - uses same embeddings as ingest.py)
 - `search_tech_events`: Find conferences
+
+**Note:** Requires `ingest.py` to be run first with the same provider
 
 ---
 
@@ -160,11 +179,18 @@ User → Supervisor → Writer
 3. Worker returns results
 4. Supervisor synthesizes and responds
 
+**Provider Support:**
+- Works with both Ollama and Google models
+- All agents use the same provider (configured via LLM_PROVIDER)
+- Researcher agent uses RAG (requires matching embeddings)
+
 **Pros:** Easy to debug, clear delegation, orchestrated workflows
 
 **Cons:** Supervisor bottleneck, less flexible
 
 **Use Case:** Predictable workflows, hierarchical tasks
+
+**Note:** Requires `ingest.py` to be run first with the same provider
 
 ---
 
@@ -185,12 +211,20 @@ Fact Checker ←→ Coordinator
 - Any agent can handoff to any other
 - No central coordinator
 - Self-organizing collaboration
+- Uses `transfer_to_*()` tools for peer-to-peer handoffs
+
+**Provider Support:**
+- Works with both Ollama and Google models
+- All agents use the same provider (configured via LLM_PROVIDER)
+- Researcher agent uses RAG (requires matching embeddings)
 
 **Pros:** Flexible, no bottleneck, creative collaboration
 
 **Cons:** Harder to debug, risk of loops, less predictable
 
 **Use Case:** Creative tasks, exploratory research
+
+**Note:** Requires `ingest.py` to be run first with the same provider
 
 ---
 
@@ -246,21 +280,25 @@ Fact Checker ←→ Coordinator
 
 ## Key Takeaways
 
-**1. Local LLMs = Privacy + Zero Cost**
-- Run on consumer hardware
-- No cloud dependency
+**1. Flexible Deployment Options**
+- Local (Ollama): Privacy, zero cost, offline capable
+- Cloud (Google): Quick start, no hardware requirements
+- Easily switch between providers via LLM_PROVIDER
 
 **2. RAG Bridges Knowledge Gaps**
 - Embeddings enable semantic search
 - SQLite VSS makes it accessible
+- Provider-specific embeddings (must match between ingest and query)
 
 **3. Graphs Enable Intelligence**
 - LangGraph: adaptive decision-making
 - ReAct: reasoning + tool use in loops
+- Works seamlessly with both local and cloud models
 
 **4. Multi-Agent Systems Scale**
 - Centralized (Supervisor): predictable workflows
 - Decentralized (Network): creative collaboration
+- Provider-agnostic architecture
 
 **5. Future: GraphRAG + Hybrid Architectures**
 
