@@ -246,6 +246,22 @@ python3 05_network/network.py [--interactive] [--question "YOUR_QUESTION"] [--th
 
 **Note**: Run `python3 02_rag_lcel/ingest.py` first to create the knowledge base used by the Researcher agent.
 
+### 06_a2a/a2a_demo.py
+```bash
+python3 06_a2a/a2a_demo.py [--thinking]
+```
+- `--thinking`: Use thinking model to show reasoning process (Ollama: qwen3 or OLLAMA_THINKING_MODEL, Google: GOOGLE_THINKING_MODEL)
+
+This demo introduces the **Agent-to-Agent (A2A) Protocol**, an open standard for enabling communication and interoperability between AI agents across different frameworks and platforms. Unlike the previous demos which show multi-agent patterns within a single framework, A2A enables agents from different vendors and frameworks to discover and collaborate with each other.
+
+**Key Concepts Demonstrated:**
+- **Agent Cards**: JSON documents that describe an agent's capabilities and how to reach it
+- **Capability Discovery**: How agents advertise what they can do
+- **JSON-RPC 2.0**: The standardized communication format used by A2A
+- **Cross-Framework Interoperability**: How agents from different systems can work together
+
+**No Prerequisites**: This demo uses simulated A2A agents and doesn't require the knowledge base from Step 2.
+
 ## Contributing & Ideas
 
 We welcome your ideas, suggestions, and contributions! 

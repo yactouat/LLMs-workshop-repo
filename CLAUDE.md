@@ -34,7 +34,7 @@ All scripts are run from the repository root:
 # Step 1: Basic LLM interaction
 python3 01_local_llm/hello_world.py [--thinking]
 
-# Step 2a: Ingest knowledge base (REQUIRED before Step 2b, 3, 4, 5)
+# Step 2a: Ingest knowledge base (REQUIRED before Step 2b, 3, 4, 5; NOT required for Step 6)
 python3 02_rag_lcel/ingest.py
 
 # Step 2b: RAG query with LCEL
@@ -48,6 +48,9 @@ python3 04_supervisor/supervisor.py [--interactive] [--question "QUESTION"] [--t
 
 # Step 5: Network/Swarm multi-agent pattern
 python3 05_network/network.py [--interactive] [--question "QUESTION"] [--thinking]
+
+# Step 6: A2A Protocol demonstration
+python3 06_a2a/a2a_demo.py [--thinking]
 ```
 
 **Common flags:**
@@ -100,7 +103,7 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 This pattern appears in all RAG-related scripts and must be placed BEFORE any sqlite3 imports. The `sqlite_vss` extension is loaded after creating the connection.
 
-### Progressive Architecture (5 Steps)
+### Progressive Architecture (6 Steps)
 
 **Step 1: Local LLM (01_local_llm/)**
 - Direct LLM interaction via ChatOllama or ChatGoogleGenerativeAI
@@ -135,6 +138,29 @@ This pattern appears in all RAG-related scripts and must be placed BEFORE any sq
 - **Flow**: Any agent → tools (handoff) → any other agent (dynamic, emergent)
 - **Key difference**: No supervisor, agents autonomously decide when/where to handoff
 - **LLM/Embeddings**: Uses `get_llm()` and `get_embeddings()` factories for provider-agnostic model selection
+
+**Step 6: A2A Protocol (06_a2a/)**
+- **Pattern**: Cross-framework agent interoperability via standardized protocol
+- **Protocol**: Agent-to-Agent (A2A) - open standard from Linux Foundation
+- **Key Concepts**:
+  - **Agent Cards**: JSON documents advertising agent capabilities and endpoints
+  - **JSON-RPC 2.0**: Standard message format for requests/responses
+  - **Capability Discovery**: Agents discover what other agents can do
+  - **HTTP Transport**: Communication over HTTP/HTTPS
+- **Demo Structure**: Simulated A2A interaction between:
+  - **Research Agent** (server): Advertises capabilities via Agent Card, processes tasks
+  - **Orchestrator Agent** (client): Discovers agents, delegates tasks
+- **Key Difference**: Unlike Steps 3-5 (single framework), A2A enables agents from *different* frameworks/vendors to collaborate
+- **Real-World Implementations**:
+  - `python-a2a` library for Python
+  - LangGraph native A2A support (`/a2a/{assistant_id}` endpoint)
+  - Google Agent Development Kit (ADK)
+- **Relationship to MCP**:
+  - MCP: Agent-to-Tool communication (agents connect to tools/resources)
+  - A2A: Agent-to-Agent communication (agents connect to other agents)
+- **Use Cases**: Enterprise systems composing multiple AI capabilities, multi-vendor agent ecosystems, agent marketplaces
+- **LLM**: Uses `get_llm()` factory for provider-agnostic model selection
+- **No Prerequisites**: Demo doesn't require knowledge base - uses simulated agents
 
 ### LangGraph State Management
 
@@ -235,7 +261,7 @@ Two patterns:
 
 ## Important Notes
 
-- **Always run ingest.py first**: Steps 2b, 3, 4, and 5 require `acme.db` to exist
+- **Always run ingest.py first**: Steps 2b, 3, 4, and 5 require `acme.db` to exist (Step 6 doesn't require it)
 - **Python path manipulation**: Scripts add parent directory to `sys.path` for utils import
 - **Database location**: Shared at repository root for cross-demo usage
 - **Model fallback**: Scripts handle missing models gracefully with warnings
